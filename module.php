@@ -9,7 +9,7 @@ class SharedFilesModule extends AApiModule
 	
 	public function GetStorages(&$aResult)
 	{
-		$iUserId = \CApi::getLogginedUserId();
+		$iUserId = \CApi::getAuthenticatedUserId();
 
 		$aResult['@Result'][] = [
 			'Type' => 'shared', 
