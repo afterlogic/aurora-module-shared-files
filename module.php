@@ -122,7 +122,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		return $aResult;
 	}
 	
-	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares)
+	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
 		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
@@ -135,7 +135,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
 
-			$oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access']);
+			$oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 		}
 	}
 }
