@@ -1,0 +1,40 @@
+<div class="popup" style="display: none;">
+	<div class="mask" data-bind="click: cancelPopup"></div>
+	<div class="popup_panel">
+		<span class="close" data-bind="click: cancelPopup"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/TITLE_SHARE_FILE'}"></span>
+
+		<div class="fields">
+			<div class="fieldset shares_personal">
+				<div class="row">
+					<label class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_CAN_SEE'}"></label>
+					<div class="input inputosaurus">
+						<div class="disable_mask" data-bind="visible: true"></div>
+						<div data-bind="customScrollbar: {x: false}">
+							<div class="scroll-inner">
+								<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: guestsDom" />
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<label class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_CAN_EDIT'}"></label>
+					<div class="input inputosaurus">
+						<div class="disable_mask" data-bind="visible: true"></div>
+						<div data-bind="customScrollbar: {x: false}">
+							<div class="scroll-inner">
+								<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: ownersDom" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="buttons">
+				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'}, click: onSaveClick"></span>
+				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'}, click: cancelPopup"></span>
+			</div>
+		</div>
+	</div>
+	<span class="helper"></span>
+</div>
