@@ -41,8 +41,6 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 		$oNode = $oServer->tree->getNodeForPath($sPath);
 		if ($oNode instanceof \Sabre\DAV\ICollection) 
 		{
-			var_dump($oNode->getPath()); exit;
-
 			$depth = 1;
 			if (!empty($sPattern))
 			{
