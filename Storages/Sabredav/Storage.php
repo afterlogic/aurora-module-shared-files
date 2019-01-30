@@ -69,7 +69,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 		
 						$oFileInfo = $this->getFileInfo($iUserId, $sType, $subNode, $sPublicHash, $sSubFullPath);
 						$oFileInfo->Name = \basename($subNode->getPath());
-		
+
 						$aResult[$subNode->getPath()] = $oFileInfo;
 					}
 				}

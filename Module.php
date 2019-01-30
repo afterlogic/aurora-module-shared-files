@@ -17,12 +17,6 @@ namespace Aurora\Modules\SharedFiles;
 class Module extends \Aurora\Modules\PersonalFiles\Module
 {
 	protected static $sStorageType = 'shared';
-	
-	/**
-	 *
-	 * @var \CApiModuleDecorator
-	 */
-	protected $oMinModuleDecorator = null;
 
 	public function getManager()
 	{
@@ -60,14 +54,16 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetItems($aArgs, &$mResult)
 	{
-		if ($this->checkStorageType($aArgs['Type']))
-		{
-			$sUserPiblicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
-			$sType = $aArgs['Type'];
-			$sPath = $aArgs['Path'];
-			$sHash = isset($aArgs['PublicHash']) ? $aArgs['PublicHash'] : null;
+		parent::onAfterGetItems($aArgs, $mResult);
 
-			$mResult = $this->getManager()->getFiles($sUserPiblicId, $sType, $sPath, $aArgs['Pattern'], $sHash);
+		if (is_array($mResult))
+		{
+			foreach ($mResult as $oItem)
+			{
+				$oExtendedProps = $oItem->ExtendedProps;
+				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], $oItem->Path . $oItem->Id);
+				$oItem->ExtendedProps = $oExtendedProps;
+			}
 		}
 	}	
 
@@ -95,22 +91,20 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$mResult = false;
 				header("HTTP/1.0 404 Not Found");
 				die('File not found');
-
 			}
 			
 			return true;
 		}
 	}	
-
 	
-	public function GetShares($UserId, $Path)
+	public function GetShares($UserId, $Storage, $Path)
 	{
 		$aResult = [];
 
 		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-		$aShares = $oFsBackend->getSharesForFile($sUserPublicId, $Path);
+		$aShares = $oFsBackend->getShares('principals/' . $sUserPublicId, $Storage, $Path);
 		foreach ($aShares as $aShare)
 		{
 			$aResult[] = [
@@ -124,6 +118,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	
 	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
+		$mResult = false;
+
 		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
@@ -135,7 +131,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
 
-			$oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+			$mResult = $oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 		}
+
+		return $mResult;
 	}
 }
