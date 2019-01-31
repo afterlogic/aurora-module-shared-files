@@ -123,14 +123,13 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-		$oFsBackend->deleteSharedFile($sUserPublicId, $Storage, $Path, $Id);
+		$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
+		$aPathInfo = pathinfo($Path);
+
+		$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
+		$oFsBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
 		foreach ($Shares as $aShare)
 		{
-			$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
-			$aPathInfo = pathinfo($Path);
-
-			$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
-
 			$mResult = $oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 		}
 
