@@ -3,9 +3,11 @@
 module.exports = function (oAppData) {
 	var
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-		
+
 		bNormalUser = App.getUserRole() === window.Enums.UserRole.NormalUser
 	;
+
+	require('modules/%ModuleName%/js/enums.js');
 
 	if (bNormalUser)
 	{
@@ -15,6 +17,6 @@ module.exports = function (oAppData) {
 			}
 		};
 	}
-	
+
 	return null;
 };

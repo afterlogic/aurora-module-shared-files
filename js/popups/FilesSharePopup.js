@@ -4,17 +4,14 @@ var
 	_ = require('underscore'),
 	$ = require('jquery'),
 	ko = require('knockout'),
-	
+
 	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
 	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
 	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
 
-	
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
-	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
-	AlertPopup = require('%PathToCoreWebclientModule%/js/popups/AlertPopup.js'),
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js')
 ;
 
@@ -22,10 +19,10 @@ var
 /**
  * @constructor
  */
-function CFilesSharePopup()
+function FilesSharePopup()
 {
 	CAbstractPopup.call(this);
-	
+
 	this.guestsDom = ko.observable();
 	this.guestsDom.subscribe(function (a) {
 		this.initInputosaurus(this.guestsDom, this.guests, this.guestsLock);
@@ -54,9 +51,6 @@ function CFilesSharePopup()
 		}
 	}, this);
 
-
-	this.fCallback = null;
-
 	this.owner = ko.observable('');
 	this.storage = ko.observable('');
 	this.path = ko.observable('');
@@ -68,85 +62,72 @@ function CFilesSharePopup()
 
 	this.newShare = ko.observable('');
 	this.newShareFocus = ko.observable(false);
-	this.newShareAccess = ko.observable(Enums.CalendarAccess.Read);
+	this.newShareAccess = ko.observable(Enums.SharedFileAccess.Read);
 	this.sharedToAll = ko.observable(false);
-	this.sharedToAllAccess = ko.observable(Enums.CalendarAccess.Read);
+	this.sharedToAllAccess = ko.observable(Enums.SharedFileAccess.Read);
 	this.canAdd = ko.observable(false);
 	this.aAccess = [
-		{'value': Enums.CalendarAccess.Read, 'display': TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS')},
-		{'value': Enums.CalendarAccess.Write, 'display': TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS')}
+		{'value': Enums.SharedFileAccess.Read, 'display': TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS')},
+		{'value': Enums.SharedFileAccess.Write, 'display': TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS')}
 	];
+	this.oFileItem = ko.observable(null);
 }
 
-_.extendOwn(CFilesSharePopup.prototype, CAbstractPopup.prototype);
+_.extendOwn(FilesSharePopup.prototype, CAbstractPopup.prototype);
 
-CFilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
+FilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
 
 
 /**
- * @param {Function} fCallback
+ *
  * @param {Object} oCalendar
  */
-CFilesSharePopup.prototype.onOpen = function (fCallback, oFileItem)
+FilesSharePopup.prototype.onOpen = function (oFileItem)
 {
-	if (_.isFunction(fCallback))
-	{
-		this.fCallback = fCallback;
-	}
 	if (!_.isUndefined(oFileItem))
 	{
-		
-		this.storage(oFileItem().storageType());
-		this.path(oFileItem().path());
-		this.id(oFileItem().id());
-/*
-		this.populateShares(oCalendar.shares());
-*/
+		this.oFileItem(oFileItem);
+		this.storage(oFileItem.storageType());
+		this.path(oFileItem.path());
+		this.id(oFileItem.id());
+		if (oFileItem.oExtendedProps && oFileItem.oExtendedProps.Shares)
+		{
+			this.populateShares(oFileItem.oExtendedProps.Shares);
+		}
+		else
+		{
+			this.populateShares([]);
+		}
 	}
 };
 
-CFilesSharePopup.prototype.onSaveClick = function ()
+FilesSharePopup.prototype.onSaveClick = function ()
 {
-	if (this.fCallback)
-	{
-		this.fCallback(this.storage(), this.path(), this.id(), this.getShares());
-	}
+	this.UpdateShare(this.storage(), this.path(), this.id(), this.getShares());
+
 	this.closePopup();
 };
 
-CFilesSharePopup.prototype.onEscHandler = function ()
+FilesSharePopup.prototype.onEscHandler = function ()
 {
 	this.cancelPopup();
-};
-
-CFilesSharePopup.prototype.onClose = function ()
-{
-	this.cleanAll();
-};
-
-CFilesSharePopup.prototype.cleanAll = function ()
-{
-	this.newShare('');
-	this.newShareAccess(Enums.CalendarAccess.Read);
-	this.shareToAllAccess = ko.observable(Enums.CalendarAccess.Read);
-	//this.shareAutocompleteItem(null);
-	this.canAdd(false);
 };
 
 /**
  * @param {string} sTerm
  * @param {Function} fResponse
  */
-CFilesSharePopup.prototype.autocompleteCallback = function (sTerm, fResponse)
+FilesSharePopup.prototype.autocompleteCallback = function (sTerm, fResponse)
 {
-	var	oParameters = {
+	var
+		oParameters = {
 			'Search': sTerm,
 			'SortField': Enums.ContactSortField.Frequency,
 			'SortOrder': 1,
 			'Storage': 'team'
 		}
 	;
-	
+
 	Ajax.send('Contacts', 'GetContacts', oParameters, function (oData) {
 		var aList = [];
 		if (oData && oData.Result && oData.Result && oData.Result.List)
@@ -168,15 +149,7 @@ CFilesSharePopup.prototype.autocompleteCallback = function (sTerm, fResponse)
 	}, this);
 };
 
-/**
- * @param {string} sEmail
- */
-CFilesSharePopup.prototype.itsMe = function (sEmail)
-{
-	return (sEmail === App.getUserPublicId());
-};
-
-CFilesSharePopup.prototype.initInputosaurus = function (koDom, ko, koLock)
+FilesSharePopup.prototype.initInputosaurus = function (koDom, ko, koLock)
 {
 	if (koDom() && $(koDom()).length > 0)
 	{
@@ -204,7 +177,7 @@ CFilesSharePopup.prototype.initInputosaurus = function (koDom, ko, koLock)
 	}
 };
 
-CFilesSharePopup.prototype.setRecipient = function (koRecipient, sRecipient)
+FilesSharePopup.prototype.setRecipient = function (koRecipient, sRecipient)
 {
 	if (koRecipient() === sRecipient)
 	{
@@ -215,24 +188,28 @@ CFilesSharePopup.prototype.setRecipient = function (koRecipient, sRecipient)
 		koRecipient(sRecipient);
 	}
 };
-
-CFilesSharePopup.prototype.getShares = function ()
+/**
+ * Returns array of shares from popup
+ * @returns {Array}
+ */
+FilesSharePopup.prototype.getShares = function ()
 {
 	return $.merge(_.map(AddressUtils.getArrayRecipients(this.guests(), false), function(oGuest){
 			return {
 				PublicId: oGuest.email,
-				Access: Enums.CalendarAccess.Read
+				Access: Enums.SharedFileAccess.Read
 			};
 		}),
 		_.map(AddressUtils.getArrayRecipients(this.owners(), false), function(oOwner){
 			return {
 				PublicId: oOwner.email,
-				Access: Enums.CalendarAccess.Write
+				Access: Enums.SharedFileAccess.Write
 			};
 		}));
 };
 
-CFilesSharePopup.prototype.populateShares = function (aShares)
+
+FilesSharePopup.prototype.populateShares = function (aShares)
 {
 	var
 		sGuests = '',
@@ -240,22 +217,48 @@ CFilesSharePopup.prototype.populateShares = function (aShares)
 	;
 
 	_.each(aShares, function (oShare) {
-		if (oShare.access === Enums.CalendarAccess.Read)
+		if (Types.pInt(oShare.Access, Enums.SharedFileAccess.Read) === Enums.SharedFileAccess.Read && oShare.PublicId !== '')//Enums
 		{
-			sGuests = oShare.name !== '' && oShare.name !== oShare.email ? 
-						sGuests + '"' + oShare.name + '" <' + oShare.email + '>,' : 
-						sGuests + oShare.email + ', ';
+			sGuests = sGuests + oShare.PublicId + ', ';
 		}
-		else if (oShare.access === Enums.CalendarAccess.Write)
+		else if (Types.pInt(oShare.Access, Enums.SharedFileAccess.Read) === Enums.SharedFileAccess.Write && oShare.PublicId !== '')//Enums
 		{
-			sOwners = oShare.name !== '' && oShare.name !== oShare.email ? 
-						sOwners + '"' + oShare.name + '" <' + oShare.email + '>,' : 
-						sOwners + oShare.email + ', ';
+			sOwners = sOwners + oShare.PublicId + ', ';
 		}
 	}, this);
 
-	this.setRecipient (this.guests, sGuests);
-	this.setRecipient (this.owners, sOwners);
+	this.setRecipient(this.guests, sGuests);
+	this.setRecipient(this.owners, sOwners);
 };
 
-module.exports = new CFilesSharePopup();
+FilesSharePopup.prototype.UpdateShare = function (sStorage, sPath, sId, aShares)
+{
+	var
+		oParameters = {
+			'Storage': sStorage,
+			'Path': sPath,
+			'Id': sId,
+			'Shares': aShares 
+		}
+	;
+
+	Ajax.send('%ModuleName%', 'UpdateShare', oParameters, _.bind(this.onUpdateShareResponse, this));
+};
+
+FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
+{
+	if (oResponse.Result)
+	{
+		//Update shares list in oFile object
+		this.oFileItem().oExtendedProps.Shares = [];
+		_.each(this.getShares(), _.bind(function (oShare) {
+			this.oFileItem().oExtendedProps.Shares.push({
+				'Access': oShare.Access,
+				'PublicId': oShare.PublicId
+			});
+		}, this));
+	}
+	this.oFileItem(null);
+};
+
+module.exports = new FilesSharePopup();
