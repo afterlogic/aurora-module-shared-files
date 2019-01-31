@@ -31,6 +31,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function init() 
 	{
 		parent::init();
+		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
 	}
 
 	/**
@@ -134,5 +135,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 
 		return $mResult;
+	}
+
+	public function onAfterCreateTables(&$aData, &$mResult)
+	{
+		$this->getManager()->createTablesFromFile();
 	}
 }

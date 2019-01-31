@@ -26,6 +26,18 @@ class Manager extends \Aurora\Modules\PersonalFiles\Manager
 		parent::__construct($oModule);
 
 		$this->oStorage = new Storages\Sabredav\Storage($this);
-		
+	}
+
+	/**
+	 * Creates tables required for module work by executing create.sql file.
+	 *
+	 * @return boolean
+	 */
+	public function createTablesFromFile()
+	{
+		$sFilePath = dirname(__FILE__) . '/Sql/create.sql';
+		$bResult = \Aurora\System\Managers\Db::getInstance()->executeSqlFile($sFilePath);
+
+		return $bResult;
 	}
 }
