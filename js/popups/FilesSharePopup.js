@@ -12,7 +12,8 @@ var
 
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
-	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js')
+	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
+	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
 ;
 
 
@@ -238,7 +239,8 @@ FilesSharePopup.prototype.UpdateShare = function (sStorage, sPath, sId, aShares)
 			'Storage': sStorage,
 			'Path': sPath,
 			'Id': sId,
-			'Shares': aShares 
+			'Shares': aShares,
+			'IsDir': !(this.oFileItem() instanceof CFileModel)
 		}
 	;
 
@@ -250,6 +252,10 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 	if (oResponse.Result)
 	{
 		//Update shares list in oFile object
+		if (!this.oFileItem().oExtendedProps)
+		{
+			this.oFileItem().oExtendedProps = {};
+		}
 		this.oFileItem().oExtendedProps.Shares = [];
 		_.each(this.getShares(), _.bind(function (oShare) {
 			this.oFileItem().oExtendedProps.Shares.push({
