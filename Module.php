@@ -116,22 +116,34 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		return $aResult;
 	}
-	
+
 	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
 		$mResult = false;
 
-		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
-		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
-
-		$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
-		$aPathInfo = pathinfo($Path);
-
-		$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
-		$oFsBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
-		foreach ($Shares as $aShare)
+		$oUser = \Aurora\System\Api::getAuthenticatedUser();
+		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
-			$mResult = $oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+			foreach ($Shares as $Share)
+			{
+				if ($oUser->PublicId === $Share['PublicId'])
+				{
+					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
+				}
+			}
+
+			$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
+			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
+
+			$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
+			$aPathInfo = pathinfo($Path);
+
+			$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
+			$oFsBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
+			foreach ($Shares as $aShare)
+			{
+				$mResult = $oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+			}
 		}
 
 		return $mResult;
