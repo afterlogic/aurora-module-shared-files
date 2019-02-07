@@ -14,7 +14,8 @@ var
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
-	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
+	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js'),
+	Screens = require('%PathToCoreWebclientModule%/js/Screens.js')
 ;
 
 
@@ -264,6 +265,7 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 				'PublicId': oShare.PublicId
 			});
 		}, this));
+		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
 	}
 	else
 	{
