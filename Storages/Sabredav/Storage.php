@@ -49,7 +49,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 			}
 
 			$oIterator = $oServer->getPropertiesIteratorForPath($sPath, [
-				'{DAV:}displayname',
+//				'{DAV:}displayname',
 			], $depth);
 
 			foreach ($oIterator as $iKey => $oItem)
@@ -57,10 +57,12 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 				// Skipping the parent path
 				if ($iKey === 0) continue;
 
+				$sHref = $oItem['href'];
+				list(, $sName) = \Sabre\Uri\split($sHref);
+
 				if (empty($sPattern) || 
-						(isset($oItem['200']['{DAV:}displayname']) && fnmatch($sPattern, $oItem['200']['{DAV:}displayname'])))
+						(/*isset($oItem['200']['{DAV:}displayname']) &&*/ fnmatch($sPattern, $sName/*$oItem['200']['{DAV:}displayname']*/)))
 				{
-					$sHref = $oItem['href'];
 					$subNode = $oServer->tree->getNodeForPath($sHref);
 
 					if ($subNode && !isset($aResult[$subNode->getPath()]))
@@ -68,7 +70,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 						list($sSubFullPath, ) = \Sabre\Uri\split(substr($sHref, 12));
 		
 						$oFileInfo = $this->getFileInfo($iUserId, $sType, $subNode, $sPublicHash, $sSubFullPath);
-						$oFileInfo->Name = \basename($subNode->getPath());
+//						$oFileInfo->Name = \basename($subNode->getPath());
 
 						$aResult[$subNode->getPath()] = $oFileInfo;
 					}

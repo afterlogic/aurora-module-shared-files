@@ -16,7 +16,15 @@ namespace Aurora\Modules\SharedFiles;
  */
 class Module extends \Aurora\Modules\PersonalFiles\Module
 {
+	/**
+	 * 
+	 */
 	protected static $sStorageType = 'shared';
+
+	/**
+	 * 
+	 */
+	protected $oBackend;
 
 	public function getManager()
 	{
@@ -32,6 +40,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		parent::init();
 		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
+
+		$this->oBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 	}
 
 	/**
@@ -102,10 +112,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		$aResult = [];
 
-		$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-		$aShares = $oFsBackend->getShares('principals/' . $sUserPublicId, $Storage, $Path);
+		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, $Path);
 		foreach ($aShares as $aShare)
 		{
 			$aResult[] = [
@@ -116,6 +125,39 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		return $aResult;
 	}
+
+	/**
+	 * @param \Aurora\Modules\StandardAuth\Classes\Account $oAccount
+	 * @param int $iType
+	 * @param string $sPath
+	 * @param string $sFileName
+	 *
+	 * @return string
+	 */
+	public function getNonExistentFileName($principalUri, $sFileName)
+	{
+		$iIndex = 0;
+		$sFileNamePathInfo = pathinfo($sFileName);
+		$sExt = '';
+		$sNameWOExt = $sFileName;
+		if (isset($sFileNamePathInfo['extension']))
+		{
+			$sExt = '.'.$sFileNamePathInfo['extension'];
+		}
+
+		if (isset($sFileNamePathInfo['filename']))
+		{
+			$sNameWOExt = $sFileNamePathInfo['filename'];
+		}
+
+		while ($this->oBackend->getSharedFileByUid($principalUri, $sFileName))
+		{
+			$sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
+			$iIndex++;
+		}
+
+		return $sFileName;
+	}		
 
 	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
@@ -132,25 +174,43 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 			}
 
-			$oFsBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
 			$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
-			$aPathInfo = pathinfo($Path);
-
-			$Id = \md5($sUserPublicId . $Storage . $Path) . (isset($aPathInfo['extension']) ? '.' . $aPathInfo['extension'] : '');
-			$oFsBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
+			
+			$mResult = $this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
 			foreach ($Shares as $aShare)
 			{
-				$mResult = $oFsBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+				$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
+				$mResult &= $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 			}
 		}
 
 		return $mResult;
 	}
 
+	/**
+	 * 
+	 */
 	public function onAfterCreateTables(&$aData, &$mResult)
 	{
 		$this->getManager()->createTablesFromFile();
+	}
+
+	/**
+	 * @ignore
+	 * @param array $aArgs Arguments of event.
+	 * @param mixed $mResult Is passed by reference.
+	 */
+	public function onBeforeDeleteUser($aArgs, &$mResult)
+	{
+		if (isset($aArgs['UserId']))
+		{
+			$oUser = \Aurora\System\Api::getUserById($aArgs['UserId']);
+			if ($oUser)
+			{
+				$this->oBackend->deleteSharesByPrincipal('principals/' . $oUser->PublicId);
+			}
+		}
 	}
 }

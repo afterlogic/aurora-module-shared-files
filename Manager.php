@@ -40,4 +40,13 @@ class Manager extends \Aurora\Modules\PersonalFiles\Manager
 
 		return $bResult;
 	}
+
+	/**
+	 * 
+	 * @param string $sPublicId
+	 */
+	public function ClearFiles($sPublicId)
+	{
+		$this->oStorage->clearPrivateFiles($sPublicId);
+	}	
 }
