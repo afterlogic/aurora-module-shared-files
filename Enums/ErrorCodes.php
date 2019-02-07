@@ -14,12 +14,14 @@ class ErrorCodes
 {
 	const NotPossibleToShareWithYourself	= 1000;
 	const UnknownError						= 1001;
+	const UserNotExists						= 1002;
 
 	/**
 	 * @var array
 	 */
 	protected $aConsts = [
 		'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself,
-		'UnknownError'						=> self::UnknownError
+		'UnknownError'						=> self::UnknownError,
+		'UserNotExists'						=> self::UserNotExists
 	];
 }

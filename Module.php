@@ -43,6 +43,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->aErrors = [
 			Enums\ErrorCodes::NotPossibleToShareWithYourself	=> $this->i18N('ERROR_NOT_POSSIBLE_TO_SHARE_WITH_YOURSELF'),
 			Enums\ErrorCodes::UnknownError				=> $this->i18N('ERROR_UNKNOWN_ERROR'),
+			Enums\ErrorCodes::UserNotExists				=> $this->i18N('ERROR_USER_NOT_EXISTS')
 		];
 
 		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
@@ -177,6 +178,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				if ($oUser->PublicId === $Share['PublicId'])
 				{
 					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
+				}
+				if (!\Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($Share['PublicId']))
+				{
+					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::UserNotExists);
 				}
 			}
 
