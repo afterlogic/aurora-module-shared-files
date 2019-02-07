@@ -13,11 +13,13 @@ namespace Aurora\Modules\SharedFiles\Enums;
 class ErrorCodes
 {
 	const NotPossibleToShareWithYourself	= 1000;
+	const UnknownError						= 1001;
 
 	/**
 	 * @var array
 	 */
 	protected $aConsts = [
-		'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself
+		'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself,
+		'UnknownError'						=> self::UnknownError
 	];
 }

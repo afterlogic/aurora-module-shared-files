@@ -11,6 +11,7 @@ var
 	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
 
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
+	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
 	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
@@ -134,7 +135,7 @@ FilesSharePopup.prototype.autocompleteCallback = function (sTerm, fResponse)
 		if (oData && oData.Result && oData.Result && oData.Result.List)
 		{
 			aList = _.map(oData.Result.List, function (oItem) {
-				return oItem && oItem.ViewEmail && oItem.ViewEmail !== this.owner() ?
+				return oItem && oItem.ViewEmail && oItem.ViewEmail !== App.getUserPublicId() ?
 					(oItem.Name && 0 < Utils.trim(oItem.Name).length ?
 						oItem.ForSharedToAll ? {value: oItem.Name, name: oItem.Name, email: oItem.ViewEmail, frequency: oItem.Frequency} :
 						{value:'"' + oItem.Name + '" <' + oItem.ViewEmail + '>', name: oItem.Name, email: oItem.ViewEmail, frequency: oItem.Frequency} : {value: oItem.ViewEmail, name: '', email: oItem.ViewEmail, frequency: oItem.Frequency}) : null;
@@ -263,6 +264,10 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 				'PublicId': oShare.PublicId
 			});
 		}, this));
+	}
+	else
+	{
+		Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_UNKNOWN_ERROR'));
 	}
 	this.oFileItem(null);
 };

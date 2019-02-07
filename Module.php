@@ -39,6 +39,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function init() 
 	{
 		parent::init();
+
+		$this->aErrors = [
+			Enums\ErrorCodes::NotPossibleToShareWithYourself	=> $this->i18N('ERROR_NOT_POSSIBLE_TO_SHARE_WITH_YOURSELF'),
+			Enums\ErrorCodes::UnknownError				=> $this->i18N('ERROR_UNKNOWN_ERROR'),
+		];
+
 		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
 
 		$this->oBackend = \Afterlogic\DAV\Backend::getBackend('fs');
