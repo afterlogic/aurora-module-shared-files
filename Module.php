@@ -209,7 +209,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($Shares as $aShare)
 			{
 				$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
-				$mResult &= $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+				$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 			}
 		}
 
