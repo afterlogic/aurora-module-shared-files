@@ -106,9 +106,11 @@ FilesSharePopup.prototype.onOpen = function (oFileItem)
 
 FilesSharePopup.prototype.onSaveClick = function ()
 {
-	this.UpdateShare(this.storage(), this.path(), this.id(), this.getShares());
-
-	this.closePopup();
+	if (this.validateShare())
+	{
+		this.updateShare(this.storage(), this.path(), this.id(), this.getShares());
+		this.closePopup();
+	}
 };
 
 FilesSharePopup.prototype.onEscHandler = function ()
@@ -234,7 +236,7 @@ FilesSharePopup.prototype.populateShares = function (aShares)
 	this.setRecipient(this.owners, sOwners);
 };
 
-FilesSharePopup.prototype.UpdateShare = function (sStorage, sPath, sId, aShares)
+FilesSharePopup.prototype.updateShare = function (sStorage, sPath, sId, aShares)
 {
 	var
 		oParameters = {
@@ -272,6 +274,35 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 		Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_UNKNOWN_ERROR'));
 	}
 	this.oFileItem(null);
+};
+
+FilesSharePopup.prototype.validateShare = function ()
+{
+	var
+		aGuests = _.map(AddressUtils.getArrayRecipients(this.guests(), false), function(oGuest){
+			return oGuest.email;
+		}),
+		aOwners = _.map(AddressUtils.getArrayRecipients(this.owners(), false), function(oOwner){
+			return oOwner.email;
+		}),
+		aDuplicateUsers = _.intersection(aGuests, aOwners)
+	;
+
+	if (aDuplicateUsers.length > 0)
+	{
+		Screens.showError(
+			TextUtils.i18n(
+				'%MODULENAME%/ERROR_DUPLICATE_USERS',
+				{ 'USERNAME' : aDuplicateUsers.length > 1 ? aDuplicateUsers.join(', ') : aDuplicateUsers[0]},
+				null,
+				aDuplicateUsers.length
+			)
+		);
+
+		return false;
+	}
+
+	return true;
 };
 
 module.exports = new FilesSharePopup();
