@@ -48,6 +48,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		];
 
 		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
+		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
 
 		$this->oBackend = \Afterlogic\DAV\Backend::getBackend('fs');
 	}
@@ -222,6 +223,23 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterCreateTables(&$aData, &$mResult)
 	{
 		$this->getManager()->createTablesFromFile();
+	}
+
+	/**
+	 * 
+	 */
+	public function onAfterGetFiles(&$aArgs, &$mResult)
+	{
+		if ($mResult)
+		{
+			$oServer = \Afterlogic\DAV\Server::getInstance();
+			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
+			$oNode = $oServer->tree->getNodeForPath($sPath);
+			if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+			{
+				$mResult['Access'] = $oNode->getAccess();
+			}
+		}
 	}
 
 	/**
