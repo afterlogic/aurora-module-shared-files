@@ -20,6 +20,32 @@ namespace Aurora\Modules\SharedFiles\Storages\Sabredav;
  */
 class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 {
+
+	/**
+	 * @param string $sUserPublicId
+	 * @param string $sType
+	 * @param object $oItem
+	 * @param string $sPublicHash
+	 * @param string $sPath
+	 *
+	 * @return \Aurora\Modules\Files\Classes\FileItem|null
+	 */
+	public function getFileInfo($sUserPublicId, $sType, $oItem, $sPublicHash = null, $sPath = null)
+	{
+
+		$oResult = parent::getFileInfo($sUserPublicId, $sType, $oItem, $sPublicHash, $sPath);
+
+		if (isset($oResult) && ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory))
+		{
+			$aExtendedProps = $oResult->ExtendedProps;
+			$aExtendedProps['Access'] = (int) $oItem->getAccess();
+			$oResult->ExtendedProps = $aExtendedProps;
+		}
+
+		return $oResult;
+	}
+
+
 	/**
 	 * @param int $iUserId
 	 * @param string $sType
