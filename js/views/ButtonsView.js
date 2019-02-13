@@ -27,7 +27,30 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 {
 	this.selectedItem = oFilesView.selector.itemSelected;
 	this.storageType = oFilesView.storageType;
+	ko.computed(function () {
+		var
+			iPathItemsLength = oFilesView.pathItems().length,
+			oLastPathItem = oFilesView.pathItems()[iPathItemsLength - 1] || false
+		;
 
+		//Disable toolbar buttons for "root" directory of Shared files
+		//and for folders with access level "Read"
+		if (!this.isSharedStorage()
+			|| (iPathItemsLength !== 0
+				&& oLastPathItem.oExtendedProps
+				&& oLastPathItem.oExtendedProps.Access === Enums.SharedFileAccess.Write
+			)
+		)
+		{
+			oFilesView.enableCreateFolderButton('%ModuleName%');
+			oFilesView.enableRenameButton('%ModuleName%');
+		}
+		else
+		{
+			oFilesView.disableCreateFolderButton('%ModuleName%');
+			oFilesView.disableRenameButton('%ModuleName%');
+		}
+	}, this);
 	this.shareCommand = Utils.createCommand(this, function () {
 		Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
 	}, function () {
@@ -35,9 +58,9 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 	});
 };
 
-ButtonsView.prototype.isVisible = function ()
+ButtonsView.prototype.isSharedStorage = function ()
 {
-	return this.storageType() !== Enums.FileStorageType.Shared;
+	return this.storageType() === Enums.FileStorageType.Shared;
 };
 
 module.exports = new ButtonsView();
