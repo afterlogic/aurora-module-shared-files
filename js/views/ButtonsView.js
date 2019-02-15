@@ -27,7 +27,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 {
 	this.selectedItem = oFilesView.selector.itemSelected;
 	this.storageType = oFilesView.storageType;
-	ko.computed(function () {
+	oFilesView.pathItems.subscribe(function () {
 		var
 			iPathItemsLength = oFilesView.pathItems().length,
 			oLastPathItem = oFilesView.pathItems()[iPathItemsLength - 1] || false
@@ -38,6 +38,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 		if (!this.isSharedStorage()
 			|| (iPathItemsLength !== 0
 				&& oLastPathItem.oExtendedProps
+				&& oLastPathItem.oExtendedProps.Access
 				&& oLastPathItem.oExtendedProps.Access === Enums.SharedFileAccess.Write
 			)
 		)
