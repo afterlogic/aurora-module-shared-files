@@ -45,11 +45,13 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 		{
 			oFilesView.enableCreateFolderButton('%ModuleName%');
 			oFilesView.enableRenameButton('%ModuleName%');
+			oFilesView.enableDeleteButton('%ModuleName%');
 		}
 		else
 		{
 			oFilesView.disableCreateFolderButton('%ModuleName%');
 			oFilesView.disableRenameButton('%ModuleName%');
+			oFilesView.disableDeleteButton('%ModuleName%');
 		}
 	}, this);
 	this.shareCommand = Utils.createCommand(this, function () {
