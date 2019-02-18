@@ -1,4 +1,4 @@
-CREATE TABLE `%PREFIX%adav_sharedfiles` (
+CREATE TABLE IF NOT EXISTS `%PREFIX%adav_sharedfiles` (
 	`id` int(11) NOT NULL AUTO_INCREMENT,
 	`storage` varchar(255) DEFAULT NULL,
 	`path` varchar(255) DEFAULT NULL,
