@@ -267,6 +267,14 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 				'PublicId': oShare.PublicId
 			});
 		}, this));
+		if (this.oFileItem().oExtendedProps.Shares.length === 0)
+		{
+			this.oFileItem().isShared(false);
+		}
+		else
+		{
+			this.oFileItem().isShared(true);
+		}
 		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
 	}
 	else
