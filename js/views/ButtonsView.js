@@ -19,6 +19,7 @@ function ButtonsView()
 			return TextUtils.i18n('%MODULENAME%/ACTION_SHARE');
 	}, this);
 	this.storageType = null;
+	this.isUploadEnabled = ko.observable(false);
 }
 
 ButtonsView.prototype.ViewTemplate = '%ModuleName%_ButtonsView';
@@ -46,12 +47,14 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 			oFilesView.enableCreateFolderButton('%ModuleName%');
 			oFilesView.enableRenameButton('%ModuleName%');
 			oFilesView.enableDeleteButton('%ModuleName%');
+			this.isUploadEnabled(true);
 		}
 		else
 		{
 			oFilesView.disableCreateFolderButton('%ModuleName%');
 			oFilesView.disableRenameButton('%ModuleName%');
 			oFilesView.disableDeleteButton('%ModuleName%');
+			this.isUploadEnabled(false);
 		}
 	}, this);
 	this.shareCommand = Utils.createCommand(this, function () {

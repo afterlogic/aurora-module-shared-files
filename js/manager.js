@@ -4,17 +4,29 @@ module.exports = function (oAppData) {
 	var
 		_ = require('underscore'),
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-
+		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
+		Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+		oButtonsView = null,
 		bNormalUser = App.getUserRole() === window.Enums.UserRole.NormalUser
 	;
 
 	require('modules/%ModuleName%/js/enums.js');
 
+	function getButtonView()
+	{
+		if (!oButtonsView)
+		{
+			oButtonsView = require('modules/%ModuleName%/js/views/ButtonsView.js');
+		}
+
+		return oButtonsView;
+	}
+
 	if (bNormalUser)
 	{
 		return {
 			start: function (ModulesManager) {
-				ModulesManager.run('FilesWebclient', 'registerToolbarButtons', [require('modules/%ModuleName%/js/views/ButtonsView.js')]);
+				ModulesManager.run('FilesWebclient', 'registerToolbarButtons', [getButtonView()]);
 				App.subscribeEvent('FilesWebclient::ParseFile::after', function (aParams) {
 
 					var
@@ -43,6 +55,13 @@ module.exports = function (oAppData) {
 					if (bIsShared)
 					{
 						oFolder.bIsShared(true);
+					}
+				});
+				App.subscribeEvent('Jua::FileUpload::isUploadAvailable', function (oParams) {
+					if (!getButtonView().isUploadEnabled())
+					{
+						Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_NOT_ENOUGH_PERMISSIONS'));
+						oParams.isUploadAvailable(false);
 					}
 				});
 			}
