@@ -39,7 +39,7 @@ module.exports = function (oAppData) {
 
 					if (bIsShared)
 					{
-						oFile.bIsShared(true);
+						oFile.isShared(true);
 					}
 				});
 				App.subscribeEvent('FilesWebclient::ParseFolder::after', function (aParams) {
@@ -54,11 +54,11 @@ module.exports = function (oAppData) {
 
 					if (bIsShared)
 					{
-						oFolder.bIsShared(true);
+						oFolder.isShared(true);
 					}
 				});
 				App.subscribeEvent('Jua::FileUpload::isUploadAvailable', function (oParams) {
-					if (!getButtonView().isUploadEnabled())
+					if (!getButtonView().isUploadEnabled() && oParams.sModuleName === "Files")
 					{
 						Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_NOT_ENOUGH_PERMISSIONS'));
 						oParams.isUploadAvailable(false);
