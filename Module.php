@@ -204,7 +204,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-			$Path =  !empty($Path) ? $Path . '/' . $Id : $Id;
+			$Path =  $Path . '/' . $Id;
 			
 			$mResult = $this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
 			foreach ($Shares as $aShare)
