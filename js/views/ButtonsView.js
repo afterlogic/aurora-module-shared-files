@@ -16,7 +16,7 @@ var
 function ButtonsView()
 {
 	this.shareTooltip = ko.computed(function () {
-			return TextUtils.i18n('%MODULENAME%/ACTION_SHARE');
+		return TextUtils.i18n('%MODULENAME%/ACTION_SHARE');
 	}, this);
 	this.storageType = null;
 	this.isUploadEnabled = ko.observable(false);
@@ -46,15 +46,29 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 		{
 			oFilesView.enableCreateFolderButton('%ModuleName%');
 			oFilesView.enableRenameButton('%ModuleName%');
-			oFilesView.enableDeleteButton('%ModuleName%');
+			oFilesView.enableShortcutButton('%ModuleName%');
 			this.isUploadEnabled(true);
 		}
 		else
 		{
 			oFilesView.disableCreateFolderButton('%ModuleName%');
 			oFilesView.disableRenameButton('%ModuleName%');
-			oFilesView.disableDeleteButton('%ModuleName%');
+			oFilesView.disableShortcutButton('%ModuleName%');
 			this.isUploadEnabled(false);
+		}
+		//Disable delete buttons for folders with access level "Read"
+		if (this.isSharedStorage()
+			&& iPathItemsLength !== 0
+			&& oLastPathItem.oExtendedProps
+			&& oLastPathItem.oExtendedProps.Access
+			&& oLastPathItem.oExtendedProps.Access !== Enums.SharedFileAccess.Write
+		)
+		{
+			oFilesView.disableDeleteButton('%ModuleName%');
+		}
+		else
+		{
+			oFilesView.enableDeleteButton('%ModuleName%');
 		}
 	}, this);
 	this.shareCommand = Utils.createCommand(this, function () {
