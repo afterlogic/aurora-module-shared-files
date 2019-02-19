@@ -5,19 +5,19 @@ var
 	$ = require('jquery'),
 	ko = require('knockout'),
 
+	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
 	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
-	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
-	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
 
-	App = require('%PathToCoreWebclientModule%/js/App.js'),
-	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
-	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
-	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js'),
-	Screens = require('%PathToCoreWebclientModule%/js/Screens.js')
+	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
+	App = require('%PathToCoreWebclientModule%/js/App.js'),
+	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
+	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
+	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+	
+	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
 ;
-
 
 /**
  * @constructor
@@ -27,7 +27,7 @@ function FilesSharePopup()
 	CAbstractPopup.call(this);
 
 	this.guestsDom = ko.observable();
-	this.guestsDom.subscribe(function (a) {
+	this.guestsDom.subscribe(function () {
 		this.initInputosaurus(this.guestsDom, this.guests, this.guestsLock);
 	}, this);
 	this.ownersDom = ko.observable();
@@ -80,10 +80,9 @@ _.extendOwn(FilesSharePopup.prototype, CAbstractPopup.prototype);
 
 FilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
 
-
 /**
  *
- * @param {Object} oCalendar
+ * @param {Object} oFileItem
  */
 FilesSharePopup.prototype.onOpen = function (oFileItem)
 {
@@ -118,56 +117,18 @@ FilesSharePopup.prototype.onEscHandler = function ()
 	this.cancelPopup();
 };
 
-/**
- * @param {string} sTerm
- * @param {Function} fResponse
- */
-FilesSharePopup.prototype.autocompleteCallback = function (sTerm, fResponse)
-{
-	var
-		oParameters = {
-			'Search': sTerm,
-			'SortField': Enums.ContactSortField.Frequency,
-			'SortOrder': 1,
-			'Storage': 'team'
-		}
-	;
-
-	Ajax.send('Contacts', 'GetContacts', oParameters, function (oData) {
-		var aList = [];
-		if (oData && oData.Result && oData.Result && oData.Result.List)
-		{
-			aList = _.map(oData.Result.List, function (oItem) {
-				return oItem && oItem.ViewEmail && oItem.ViewEmail !== App.getUserPublicId() ?
-					(oItem.Name && 0 < Utils.trim(oItem.Name).length ?
-						oItem.ForSharedToAll ? {value: oItem.Name, name: oItem.Name, email: oItem.ViewEmail, frequency: oItem.Frequency} :
-						{value:'"' + oItem.Name + '" <' + oItem.ViewEmail + '>', name: oItem.Name, email: oItem.ViewEmail, frequency: oItem.Frequency} : {value: oItem.ViewEmail, name: '', email: oItem.ViewEmail, frequency: oItem.Frequency}) : null;
-			}, this);
-
-			aList = _.sortBy(_.compact(aList), function(num){
-				return num.frequency;
-			}).reverse();
-		}
-
-		fResponse(aList);
-
-	}, this);
-};
-
-FilesSharePopup.prototype.initInputosaurus = function (koDom, ko, koLock)
+FilesSharePopup.prototype.initInputosaurus = function (koDom, koAddr, koLockAddr)
 {
 	if (koDom() && $(koDom()).length > 0)
 	{
 		$(koDom()).inputosaurus({
 			width: 'auto',
 			parseOnBlur: true,
-			autoCompleteSource: _.bind(function (oData, fResponse) {
-				this.autocompleteCallback(oData.term, fResponse);
-			}, this),
+			autoCompleteSource: ModulesManager.run('ContactsWebclient', 'getSuggestionsAutocompleteComposeCallback') || function () {},
 			change : _.bind(function (ev) {
-				koLock(true);
-				this.setRecipient(ko, ev.target.value);
-				koLock(false);
+				koLockAddr(true);
+				this.setRecipient(koAddr, ev.target.value);
+				koLockAddr(false);
 			}, this),
 			copy: _.bind(function (sVal) {
 				this.inputosaurusBuffer = sVal;
@@ -193,6 +154,7 @@ FilesSharePopup.prototype.setRecipient = function (koRecipient, sRecipient)
 		koRecipient(sRecipient);
 	}
 };
+
 /**
  * Returns array of shares from popup
  * @returns {Array}
@@ -212,7 +174,6 @@ FilesSharePopup.prototype.getShares = function ()
 			};
 		}));
 };
-
 
 FilesSharePopup.prototype.populateShares = function (aShares)
 {
