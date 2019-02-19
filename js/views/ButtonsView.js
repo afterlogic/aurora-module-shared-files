@@ -44,16 +44,16 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 			)
 		)
 		{
-			oFilesView.enableCreateFolderButton('%ModuleName%');
-			oFilesView.enableRenameButton('%ModuleName%');
-			oFilesView.enableShortcutButton('%ModuleName%');
+			oFilesView.enableButton(oFilesView.createFolderButtonModules, '%ModuleName%');
+			oFilesView.enableButton(oFilesView.renameButtonModules, '%ModuleName%');
+			oFilesView.enableButton(oFilesView.shortcutButtonModules, '%ModuleName%');
 			this.isUploadEnabled(true);
 		}
 		else
 		{
-			oFilesView.disableCreateFolderButton('%ModuleName%');
-			oFilesView.disableRenameButton('%ModuleName%');
-			oFilesView.disableShortcutButton('%ModuleName%');
+			oFilesView.disableButton(oFilesView.createFolderButtonModules, '%ModuleName%');
+			oFilesView.disableButton(oFilesView.renameButtonModules, '%ModuleName%');
+			oFilesView.disableButton(oFilesView.shortcutButtonModules, '%ModuleName%');
 			this.isUploadEnabled(false);
 		}
 		//Disable delete buttons for folders with access level "Read"
@@ -64,11 +64,11 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 			&& oLastPathItem.oExtendedProps.Access !== Enums.SharedFileAccess.Write
 		)
 		{
-			oFilesView.disableDeleteButton('%ModuleName%');
+			oFilesView.disableButton(oFilesView.deleteButtonModules, '%ModuleName%');
 		}
 		else
 		{
-			oFilesView.enableDeleteButton('%ModuleName%');
+			oFilesView.enableButton(oFilesView.deleteButtonModules, '%ModuleName%');
 		}
 	}, this);
 	this.shareCommand = Utils.createCommand(this, function () {
