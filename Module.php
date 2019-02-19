@@ -123,7 +123,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, $Path);
+		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 		foreach ($aShares as $aShare)
 		{
 			$aResult[] = [
