@@ -50,7 +50,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
 
-		$this->oBackend = \Afterlogic\DAV\Backend::getBackend('fs');
+		$this->oBackend = new \Afterlogic\DAV\FS\Backend\PDO();
 	}
 
 	/**
