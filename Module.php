@@ -234,11 +234,15 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		{
 			$oServer = \Afterlogic\DAV\Server::getInstance();
 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
-			$oNode = $oServer->tree->getNodeForPath($sPath);
-			if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+			try
 			{
-				$mResult['Access'] = $oNode->getAccess();
+				$oNode = $oServer->tree->getNodeForPath($sPath);
+				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+				{
+					$mResult['Access'] = $oNode->getAccess();
+				}
 			}
+			catch (\Exception $oEx) {}
 		}
 	}
 
