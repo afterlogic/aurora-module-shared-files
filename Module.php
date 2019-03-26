@@ -98,7 +98,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($this->checkStorageType($aArgs['Type']))
 		{
 			$oServer = \Afterlogic\DAV\Server::getInstance();
-//			$oServer->setUser($aArgs['UserId']);
+			
+			// $oServer->setUser(
+			// 	\Aurora\Api::getUserPublicIdById($aArgs['UserId'])				
+			// );
 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'] . '/' .  $aArgs['Name'];
 
 			$oNode = $oServer->tree->getNodeForPath($sPath);
@@ -262,4 +265,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 		}
 	}
+
+	/**
+	 * @ignore
+	 * @param array $aArgs Arguments of event.
+	 * @param mixed $mResult Is passed by reference.
+	 */
+	public function onAfterGetSubModules($aArgs, &$mResult)
+	{
+		array_unshift($mResult, static::$sStorageType);
+	}	
 }
