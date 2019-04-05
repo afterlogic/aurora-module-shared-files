@@ -107,7 +107,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$oNode = $oServer->tree->getNodeForPath($sPath);
 			if ($oNode instanceof \Afterlogic\DAV\FS\File)
 			{
-				$mResult = $oNode->get();	
+				if ($aArgs['IsThumb'])
+				{
+					$mResult = $oNode->get();	
+				}
+				else
+				{
+					$mResult = $oNode->get(true);	
+				}
 			}
 			else
 			{
