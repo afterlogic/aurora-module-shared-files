@@ -3,11 +3,13 @@
 module.exports = function (oAppData) {
 	var
 		_ = require('underscore'),
-		App = require('%PathToCoreWebclientModule%/js/App.js'),
+				
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
+		
+		App = require('%PathToCoreWebclientModule%/js/App.js'),
 		Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
-		oButtonsView = null,
-		bNormalUser = App.getUserRole() === window.Enums.UserRole.NormalUser
+		
+		oButtonsView = null
 	;
 
 	require('modules/%ModuleName%/js/enums.js');
@@ -22,7 +24,7 @@ module.exports = function (oAppData) {
 		return oButtonsView;
 	}
 
-	if (bNormalUser)
+	if (App.isUserNormalOrTenant())
 	{
 		return {
 			start: function (ModulesManager) {
