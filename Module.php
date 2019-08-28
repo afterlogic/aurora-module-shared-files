@@ -20,6 +20,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 * 
 	 */
 	protected static $sStorageType = 'shared';
+	protected static $iStorageOrder = 30;
+
 
 	/**
 	 * 
@@ -52,20 +54,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->oBackend = new \Afterlogic\DAV\FS\Backend\PDO();
 	}
-
-	/**
-	 * @ignore
-	 * @param array $aArgs Arguments of event.
-	 * @param mixed $mResult Is passed by reference.
-	 */
-	public function onAfterGetStorages($aArgs, &$mResult)
-	{
-		$mResult[] = [
-			'Type' => static::$sStorageType, 
-			'DisplayName' => $this->i18N('LABEL_STORAGE'), 
-			'IsExternal' => false
-		];
-	}	
 
 	/**
 	 * @ignore
