@@ -49,7 +49,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Enums\ErrorCodes::DuplicatedUsers			=> $this->i18N('ERROR_DUPLICATE_USERS_BACKEND')
 		];
 
-		$this->subscribeEvent('Core::CreateTables::after', array($this, 'onAfterCreateTables'));
+		$this->subscribeEvent('Dav::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
 
 		$this->oBackend = new \Afterlogic\DAV\FS\Backend\PDO();
@@ -69,7 +69,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($mResult as $oItem)
 			{
 				$oExtendedProps = $oItem->ExtendedProps;
-				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], $oItem->Path . $oItem->Id);
+				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id);
 				$oItem->ExtendedProps = $oExtendedProps;
 			}
 		}
@@ -220,7 +220,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterCreateTables(&$aData, &$mResult)
 	{
-		$this->getManager()->createTablesFromFile();
+		if ($mResult)
+		{
+			$this->getManager()->createTablesFromFile();
+		}
 	}
 
 	/**
