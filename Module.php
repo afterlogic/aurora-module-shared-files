@@ -42,6 +42,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		parent::init();
 
+		$this->oBackend = new \Afterlogic\DAV\FS\Backend\PDO();
+
 		$this->aErrors = [
 			Enums\ErrorCodes::NotPossibleToShareWithYourself	=> $this->i18N('ERROR_NOT_POSSIBLE_TO_SHARE_WITH_YOURSELF'),
 			Enums\ErrorCodes::UnknownError				=> $this->i18N('ERROR_UNKNOWN_ERROR'),
@@ -51,8 +53,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Dav::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
-
-		$this->oBackend = new \Afterlogic\DAV\FS\Backend\PDO();
+		$this->subscribeEvent('Files::Delete::before', array($this, 'onBeforeFilesDelete'));
 	}
 
 	/**
@@ -114,6 +115,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			return true;
 		}
 	}	
+
+	public function onBeforeFilesDelete($aArgs, $mResult)
+	{
+		$iUserId = $aArgs['UserId'];
+		$sStorage = $aArgs['Type'];
+		$aItems = $aArgs['Items'];
+
+		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
+		foreach ($aItems as $aItem)
+		{
+			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
+		}
+	}
 	
 	public function GetShares($UserId, $Storage, $Path)
 	{
