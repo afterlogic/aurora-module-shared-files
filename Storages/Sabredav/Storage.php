@@ -81,7 +81,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 			foreach ($oIterator as $iKey => $oItem)
 			{
 				// Skipping the parent path
-				if ($iKey === 0) continue 2;
+				if ($iKey === 0) continue;
 
 				$sHref = $oItem['href'];
 				list(, $sName) = \Sabre\Uri\split($sHref);
