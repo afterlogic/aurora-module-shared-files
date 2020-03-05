@@ -20,13 +20,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 * 
 	 */
 	protected static $sStorageType = 'shared';
+	
+	/**
+	 *
+	 * @var integer
+	 */
 	protected static $iStorageOrder = 30;
-
 
 	/**
 	 * 
 	 */
 	protected $oBackend;
+
+	protected $oBeforeDeleteUser = null;
 
 	public function getManager()
 	{
@@ -53,7 +59,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Dav::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
-		$this->subscribeEvent('Files::Delete::before', array($this, 'onBeforeFilesDelete'));
 	}
 
 	/**
@@ -116,7 +121,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 	}	
 
-	public function onBeforeFilesDelete($aArgs, $mResult)
+	public function onAfterDelete($aArgs, $mResult)
 	{
 		$iUserId = $aArgs['UserId'];
 		$sStorage = $aArgs['Type'];
@@ -266,15 +271,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 * @param array $aArgs Arguments of event.
 	 * @param mixed $mResult Is passed by reference.
 	 */
-	public function onBeforeDeleteUser($aArgs, &$mResult)
+	public function onAfterDeleteUser($aArgs, $mResult)
 	{
-		if (isset($aArgs['UserId']))
+		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
-			$oUser = \Aurora\System\Api::getUserById($aArgs['UserId']);
-			if ($oUser)
-			{
-				$this->oBackend->deleteSharesByPrincipal('principals/' . $oUser->PublicId);
-			}
+			$this->oBackend->deleteSharesByPrincipal('principals/' . $this->oBeforeDeleteUser->PublicId);
 		}
 	}
 
