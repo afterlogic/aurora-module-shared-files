@@ -121,7 +121,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 	}	
 
-	public function onAfterDelete($aArgs, $mResult)
+	public function onAfterDelete(&$aArgs, &$mResult)
 	{
 		$iUserId = $aArgs['UserId'];
 		$sStorage = $aArgs['Type'];
