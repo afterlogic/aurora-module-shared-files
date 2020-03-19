@@ -59,6 +59,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Dav::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
+		$this->subscribeEvent('Files::GetItems::after', array($this, 'onAfterGetItems'), 10000);
 	}
 
 	/**
@@ -68,7 +69,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetItems($aArgs, &$mResult)
 	{
-		parent::onAfterGetItems($aArgs, $mResult);
+		if ($this->checkStorageType($aArgs['Type']))
+		{
+			parent::onAfterGetItems($aArgs, $mResult);
+		}
 
 		if (is_array($mResult))
 		{
@@ -286,6 +290,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetSubModules($aArgs, &$mResult)
 	{
-		array_unshift($mResult, static::$sStorageType);
+		array_unshift($mResult, self::$sStorageType);
 	}	
 }
