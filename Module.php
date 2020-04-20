@@ -17,10 +17,10 @@ namespace Aurora\Modules\SharedFiles;
 class Module extends \Aurora\Modules\PersonalFiles\Module
 {
 	/**
-	 * 
+	 *
 	 */
 	protected static $sStorageType = 'shared';
-	
+
 	/**
 	 *
 	 * @var integer
@@ -28,7 +28,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	protected static $iStorageOrder = 30;
 
 	/**
-	 * 
+	 *
 	 */
 	protected $oBackend;
 
@@ -43,8 +43,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		return $this->oManager;
 	}
-	
-	public function init() 
+
+	public function init()
 	{
 		parent::init();
 
@@ -83,7 +83,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$oItem->ExtendedProps = $oExtendedProps;
 			}
 		}
-	}	
+	}
 
 	/**
 	 * Puts file content to $mResult.
@@ -96,9 +96,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($this->checkStorageType($aArgs['Type']))
 		{
 			$oServer = \Afterlogic\DAV\Server::getInstance();
-			
+
 			// $oServer->setUser(
-			// 	\Aurora\Api::getUserPublicIdById($aArgs['UserId'])				
+			// 	\Aurora\Api::getUserPublicIdById($aArgs['UserId'])
 			// );
 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'] . '/' .  $aArgs['Name'];
 
@@ -107,11 +107,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			{
 				if ($aArgs['IsThumb'])
 				{
-					$mResult = $oNode->get();	
+					$mResult = $oNode->get();
 				}
 				else
 				{
-					$mResult = $oNode->get(true);	
+					$mResult = $oNode->get(true);
 				}
 			}
 			else
@@ -120,10 +120,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				header("HTTP/1.0 404 Not Found");
 				die('File not found');
 			}
-			
+
 			return true;
 		}
-	}	
+	}
 
 	public function onAfterDelete(&$aArgs, &$mResult)
 	{
@@ -137,7 +137,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
 		}
 	}
-	
+
 	public function GetShares($UserId, $Storage, $Path)
 	{
 		$aResult = [];
@@ -187,7 +187,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 
 		return $sFileName;
-	}		
+	}
 
 	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
@@ -226,7 +226,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
 			$Path =  $Path . '/' . $Id;
-			
+
 			$mResult = $this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
 			foreach ($Shares as $aShare)
 			{
@@ -239,7 +239,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	public function onAfterCreateTables(&$aData, &$mResult)
 	{
@@ -250,7 +250,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	public function onAfterGetFiles(&$aArgs, &$mResult)
 	{
@@ -291,5 +291,5 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterGetSubModules($aArgs, &$mResult)
 	{
 		array_unshift($mResult, self::$sStorageType);
-	}	
+	}
 }
