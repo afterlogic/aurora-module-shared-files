@@ -74,7 +74,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 	this.shareCommand = Utils.createCommand(this, function () {
 		Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
 	}, function () {
-		return (this.selectedItem() !== null && oFilesView.selector.listCheckedAndSelected().length === 1);
+		return (!oFilesView.isZipFolder() && this.selectedItem() !== null && oFilesView.selector.listCheckedAndSelected().length === 1);
 	});
 };
 
