@@ -15,7 +15,7 @@ var
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
-	
+
 	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
 ;
 
@@ -74,6 +74,7 @@ function FilesSharePopup()
 		{'value': Enums.SharedFileAccess.Write, 'display': TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS')}
 	];
 	this.oFileItem = ko.observable(null);
+	this.bSaving = ko.observable(false);
 }
 
 _.extendOwn(FilesSharePopup.prototype, CAbstractPopup.prototype);
@@ -107,8 +108,8 @@ FilesSharePopup.prototype.onSaveClick = function ()
 {
 	if (this.validateShare())
 	{
+		this.bSaving(true);
 		this.updateShare(this.storage(), this.path(), this.id(), this.getShares());
-		this.closePopup();
 	}
 };
 
@@ -119,12 +120,34 @@ FilesSharePopup.prototype.onEscHandler = function ()
 
 FilesSharePopup.prototype.initInputosaurus = function (koDom, koAddr, koLockAddr)
 {
+	var
+		fSuggestionsAutocompleteCallback = ModulesManager.run(
+				'ContactsWebclient',
+				'getSuggestionsAutocompleteCallback',
+				[
+					'team',
+					App.getUserPublicId()
+				]
+			)
+			|| function () {},
+		//TODO: Remove this wrapper after adding PGP-keys to team storage
+		fSuggestionsAutocompleteFilteredCallback = ModulesManager.run(
+				'OpenPgpWebclient',
+				'getSuggestionsAutocompleteFilteredCallback',
+				[fSuggestionsAutocompleteCallback]
+			),
+		fCallback = fSuggestionsAutocompleteFilteredCallback ?
+			fSuggestionsAutocompleteFilteredCallback
+			:
+			fSuggestionsAutocompleteCallback
+	;
+
 	if (koDom() && $(koDom()).length > 0)
 	{
 		$(koDom()).inputosaurus({
 			width: 'auto',
 			parseOnBlur: true,
-			autoCompleteSource: ModulesManager.run('ContactsWebclient', 'getSuggestionsAutocompleteCallback', ['team', App.getUserPublicId()]) || function () {},
+			autoCompleteSource: fCallback,
 			change : _.bind(function (ev) {
 				koLockAddr(true);
 				this.setRecipient(koAddr, ev.target.value);
@@ -206,10 +229,31 @@ FilesSharePopup.prototype.updateShare = function (sStorage, sPath, sId, aShares)
 			'Id': sId,
 			'Shares': aShares,
 			'IsDir': !(this.oFileItem() instanceof CFileModel)
-		}
+		},
+		fOnSuccessCallback = _.bind(function () {
+			Ajax.send(
+				'%ModuleName%',
+				'UpdateShare',
+				oParameters,
+				_.bind(this.onUpdateShareResponse, this)
+			);
+		}, this),
+		fOnErrorCallback = _.bind(function () {
+			this.bSaving(false);
+		}, this)
 	;
 
-	Ajax.send('%ModuleName%', 'UpdateShare', oParameters, _.bind(this.onUpdateShareResponse, this));
+	var bHasSubscriber = App.broadcastEvent('%ModuleName%::UpdateShare::before', {
+		Shares: aShares,
+		OnSuccessCallback: fOnSuccessCallback,
+		OnErrorCallback: fOnErrorCallback,
+		oFileItem: this.oFileItem()
+	});
+
+	if (bHasSubscriber === false)
+	{
+		fCallback();
+	}
 };
 
 FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
@@ -242,6 +286,8 @@ FilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest)
 	{
 		Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_UNKNOWN_ERROR'));
 	}
+	this.bSaving(false);
+	this.closePopup();
 	this.oFileItem(null);
 };
 

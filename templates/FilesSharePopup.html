@@ -31,8 +31,18 @@
 			</div>
 
 			<div class="buttons">
-				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'}, click: onSaveClick"></span>
-				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'}, click: cancelPopup"></span>
+				<span
+					class="button"
+					data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
+						click: bSaving() ? false : onSaveClick,
+						css: {'disabled': bSaving()}"
+				></span>
+				<span
+					class="button secondary_button"
+					data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
+						click: bSaving() ? false : cancelPopup,
+						css: {'disabled': bSaving()}"
+				></span>
 			</div>
 		</div>
 	</div>
