@@ -243,12 +243,16 @@ FilesSharePopup.prototype.updateShare = function (sStorage, sPath, sId, aShares)
 		}, this)
 	;
 
-	var bHasSubscriber = App.broadcastEvent('%ModuleName%::UpdateShare::before', {
-		Shares: aShares,
-		OnSuccessCallback: fOnSuccessCallback,
-		OnErrorCallback: fOnErrorCallback,
-		oFileItem: this.oFileItem()
-	});
+	var bHasSubscriber = App.broadcastEvent(
+		'%ModuleName%::UpdateShare::before',
+		{
+			Shares: aShares,
+			OnSuccessCallback: fOnSuccessCallback,
+			OnErrorCallback: fOnErrorCallback,
+			oFileItem: this.oFileItem(),
+			IsDir: !(this.oFileItem() instanceof CFileModel)
+		}
+	);
 
 	if (bHasSubscriber === false)
 	{
