@@ -87,7 +87,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 				list(, $sName) = \Sabre\Uri\split($sHref);
 
 				if (empty($sPattern) || 
-						(/*isset($oItem['200']['{DAV:}displayname']) &&*/ fnmatch($sPattern, $sName/*$oItem['200']['{DAV:}displayname']*/)))
+						(/*isset($oItem['200']['{DAV:}displayname']) &&*/ fnmatch("*" . $sPattern . "*", $sName/*$oItem['200']['{DAV:}displayname']*/)))
 				{
 					$subNode = $oServer->tree->getNodeForPath($sHref);
 
