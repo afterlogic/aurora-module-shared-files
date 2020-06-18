@@ -75,6 +75,7 @@ function FilesSharePopup()
 	];
 	this.oFileItem = ko.observable(null);
 	this.bSaving = ko.observable(false);
+	this.sDialogHintText = ko.observable('');
 }
 
 _.extendOwn(FilesSharePopup.prototype, CAbstractPopup.prototype);
@@ -93,6 +94,14 @@ FilesSharePopup.prototype.onOpen = function (oFileItem)
 		this.storage(oFileItem.storageType());
 		this.path(oFileItem.path());
 		this.id(oFileItem.id());
+		this.sDialogHintText('');
+		App.broadcastEvent(
+			'%ModuleName%::OpenFilesSharePopup',
+			{
+				'DialogHintText': this.sDialogHintText,
+				'IsDir': !(this.oFileItem() instanceof CFileModel)
+			}
+		);
 		if (oFileItem.oExtendedProps && oFileItem.oExtendedProps.Shares)
 		{
 			this.populateShares(oFileItem.oExtendedProps.Shares);
