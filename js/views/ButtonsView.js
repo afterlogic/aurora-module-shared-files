@@ -71,11 +71,20 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 			oFilesView.enableButton(oFilesView.deleteButtonModules, '%ModuleName%');
 		}
 	}, this);
-	this.shareCommand = Utils.createCommand(this, function () {
-		Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
-	}, function () {
-		return (!oFilesView.isZipFolder() && this.selectedItem() !== null && oFilesView.selector.listCheckedAndSelected().length === 1);
-	});
+	this.shareCommand = Utils.createCommand(
+		this,
+		function () {
+			Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
+		},
+		function () {
+			return (
+				!oFilesView.isZipFolder()
+				&& this.selectedItem() !== null
+				&& oFilesView.selector.listCheckedAndSelected().length === 1
+				&& oFilesView.checkedReadyForOperations()
+			);
+		}
+	);
 };
 
 ButtonsView.prototype.isSharedStorage = function ()
