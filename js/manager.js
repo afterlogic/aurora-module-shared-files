@@ -66,6 +66,9 @@ module.exports = function (oAppData) {
 						oParams.isUploadAvailable(false);
 					}
 				});
+			},
+			getFilesSharePopup: function () {
+				return require('modules/SharedFiles/js/popups/FilesSharePopup.js');
 			}
 		};
 	}
