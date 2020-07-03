@@ -14,9 +14,12 @@ var
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
+	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
 
-	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js')
+	CFileModel = require('modules/FilesWebclient/js/models/CFileModel.js'),
+
+	ShowHistoryPopup = ModulesManager.run('ActivityHistory', 'getShowHistoryPopup')
 ;
 
 /**
@@ -76,6 +79,8 @@ function FilesSharePopup()
 	this.oFileItem = ko.observable(null);
 	this.bSaving = ko.observable(false);
 	this.sDialogHintText = ko.observable('');
+
+	this.bAllowShowHistory = !!ShowHistoryPopup;
 }
 
 _.extendOwn(FilesSharePopup.prototype, CAbstractPopup.prototype);
@@ -332,5 +337,12 @@ FilesSharePopup.prototype.validateShare = function ()
 
 	return true;
 };
+
+FilesSharePopup.prototype.showHistory = function () {
+	if (this.bAllowShowHistory)
+	{
+		Popups.showPopup(ShowHistoryPopup, [TextUtils.i18n('%MODULENAME%/HEADING_HISTORY_POPUP'), this.oFileItem()]);
+	}
+}
 
 module.exports = new FilesSharePopup();
