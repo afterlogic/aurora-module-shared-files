@@ -112,6 +112,15 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				else
 				{
 					$mResult = $oNode->get(true);
+
+					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
+					$aArgs = [
+						'UserId' => $aArgs['UserId'],
+						'ResourceType' => 'file',
+						'ResourceId' => $sResourceId,
+						'Action' => 'get-share'
+					];
+					$this->broadcastEvent('AddToActivityHistory', $aArgs);
 				}
 			}
 			else
@@ -208,7 +217,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				{
 					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::UserNotExists);
 				}
-				if ($Share['Access'] === 2)//read TODO: replace with constant
+				if ($Share['Access'] === Enums\Access::Read)
 				{
 					$aGuests[] = $Share['PublicId'];
 				}
@@ -228,11 +237,26 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$Path =  $Path . '/' . $Id;
 
 			$mResult = $this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
+			$aGuestPublicIds = [];
 			foreach ($Shares as $aShare)
 			{
 				$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
 				$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+				if ($mResult)
+				{
+					$sAccess = (int) $aShare['Access'] === Enums\Access::Read ? '(r)' : '(w)';
+					$aGuestPublicIds[] = $aShare['PublicId'] . $sAccess;
+				}
 			}
+			$sResourceId = $Storage . '/' . \ltrim(\ltrim($Path, '/'));
+			$aArgs = [
+				'UserId' => $UserId,
+				'ResourceType' => 'file',
+				'ResourceId' => $sResourceId,
+				'Action' => 'update-share',
+				'GuestPublicId' => \implode($aGuestPublicIds, ', ')
+			];
+			$this->broadcastEvent('AddToActivityHistory', $aArgs);
 		}
 
 		return $mResult;
@@ -264,6 +288,17 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
 				{
 					$mResult['Access'] = $oNode->getAccess();
+				}
+				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+				{
+					$sResourceId = $aArgs['Type'] . '/' . \ltrim($aArgs['Path'], '/');
+					$aArgs = [
+						'UserId' => $aArgs['UserId'],
+						'ResourceType' => 'file',
+						'ResourceId' => $sResourceId,
+						'Action' => 'list-share'
+					];
+					$this->broadcastEvent('AddToActivityHistory', $aArgs);
 				}
 			}
 			catch (\Exception $oEx) {}
