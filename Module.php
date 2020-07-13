@@ -112,15 +112,21 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				else
 				{
 					$mResult = $oNode->get(true);
+					$sRelativePath = $oNode instanceof \Afterlogic\DAV\FS\Shared\File ? $oNode->getRelativeNodePath() : $oNode->getRelativePath();
+					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($sRelativePath, '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
 
-					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
-					$aArgs = [
-						'UserId' => $aArgs['UserId'],
-						'ResourceType' => 'file',
-						'ResourceId' => $sResourceId,
-						'Action' => 'get-share'
-					];
-					$this->broadcastEvent('AddToActivityHistory', $aArgs);
+					$sOwnerPublicId = $oNode instanceof \Afterlogic\DAV\FS\Shared\File ? $oNode->getOwnerPublicId() : $oNode->getUser();
+					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($sOwnerPublicId);
+					if ($oUser)
+					{
+						$aArgs = [
+							'UserId' => $oUser->EntityId,
+							'ResourceType' => 'file',
+							'ResourceId' => $sResourceId,
+							'Action' => 'get-share'
+						];
+						$this->broadcastEvent('AddToActivityHistory', $aArgs);
+					}
 				}
 			}
 			else
@@ -291,14 +297,18 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
 				{
-					$sResourceId = $aArgs['Type'] . '/' . \ltrim($aArgs['Path'], '/');
-					$aArgs = [
-						'UserId' => $aArgs['UserId'],
-						'ResourceType' => 'file',
-						'ResourceId' => $sResourceId,
-						'Action' => 'list-share'
-					];
-					$this->broadcastEvent('AddToActivityHistory', $aArgs);
+					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativeNodePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
+					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
+					if ($oUser)
+					{
+						$aArgs = [
+							'UserId' => $oUser->EntityId,
+							'ResourceType' => 'file',
+							'ResourceId' => $sResourceId,
+							'Action' => 'list-share'
+						];
+						$this->broadcastEvent('AddToActivityHistory', $aArgs);
+					}
 				}
 			}
 			catch (\Exception $oEx) {}
