@@ -136,24 +136,14 @@ FilesSharePopup.prototype.initInputosaurus = function (koDom, koAddr, koLockAddr
 {
 	var
 		fSuggestionsAutocompleteCallback = ModulesManager.run(
-				'ContactsWebclient',
-				'getSuggestionsAutocompleteCallback',
-				[
-					'team',
-					App.getUserPublicId()
-				]
-			)
-			|| function () {},
-		//TODO: Remove this wrapper after adding PGP-keys to team storage
-		fSuggestionsAutocompleteFilteredCallback = ModulesManager.run(
-				'OpenPgpWebclient',
-				'getSuggestionsAutocompleteFilteredCallback',
-				[fSuggestionsAutocompleteCallback]
-			),
-		fCallback = fSuggestionsAutocompleteFilteredCallback ?
-			fSuggestionsAutocompleteFilteredCallback
-			:
-			fSuggestionsAutocompleteCallback
+			'ContactsWebclient',
+			'getSuggestionsAutocompleteCallback',
+			[
+				'team',
+				App.getUserPublicId()
+			]
+		)
+		|| function () {}
 	;
 
 	if (koDom() && $(koDom()).length > 0)
@@ -161,7 +151,7 @@ FilesSharePopup.prototype.initInputosaurus = function (koDom, koAddr, koLockAddr
 		$(koDom()).inputosaurus({
 			width: 'auto',
 			parseOnBlur: true,
-			autoCompleteSource: fCallback,
+			autoCompleteSource: fSuggestionsAutocompleteCallback,
 			change : _.bind(function (ev) {
 				koLockAddr(true);
 				this.setRecipient(koAddr, ev.target.value);
