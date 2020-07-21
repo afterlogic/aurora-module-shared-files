@@ -77,11 +77,20 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 			Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
 		},
 		function () {
+			// Conditions for button activity:
+			// Personal: one file or one folder
+			// Encrypted: one file only
+			// Corporate: nothing
+			// Shared: nothing
 			return (
 				!oFilesView.isZipFolder()
 				&& this.selectedItem() !== null
 				&& oFilesView.selector.listCheckedAndSelected().length === 1
 				&& oFilesView.checkedReadyForOperations()
+				&& (
+					oFilesView.storageType() === Enums.FileStorageType.Personal
+					|| oFilesView.storageType() === Enums.FileStorageType.Encrypted && this.selectedItem().constructor.name === 'CFileModel'
+				)
 			);
 		}
 	);
