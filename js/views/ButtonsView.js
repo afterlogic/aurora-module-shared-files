@@ -7,6 +7,8 @@ var
 	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
 	
 	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
+	AlertPopup = require('%PathToCoreWebclientModule%/js/popups/AlertPopup.js'),
+	
 	FilesSharePopup = require('modules/%ModuleName%/js/popups/FilesSharePopup.js')
 ;
 
@@ -74,7 +76,14 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 	this.shareCommand = Utils.createCommand(
 		this,
 		function () {
-			Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
+			if (this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
+			{
+				Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
+			}
+			else
+			{
+				Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
+			}
 		},
 		function () {
 			// Conditions for button activity:
