@@ -76,7 +76,8 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 	this.shareCommand = Utils.createCommand(
 		this,
 		function () {
-			if (this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
+			var bIsFile = this.selectedItem().constructor.name === 'CFileModel';
+			if (bIsFile && this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
 			{
 				Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
 			}
