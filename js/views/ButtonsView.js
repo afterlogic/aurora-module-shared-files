@@ -76,8 +76,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 	this.shareCommand = Utils.createCommand(
 		this,
 		function () {
-			var bIsFile = this.selectedItem().constructor.name === 'CFileModel';
-			if (bIsFile && this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
+			if (this.selectedItem().IS_FILE && this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
 			{
 				Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
 			}
@@ -99,7 +98,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 				&& oFilesView.checkedReadyForOperations()
 				&& (
 					oFilesView.storageType() === Enums.FileStorageType.Personal
-					|| oFilesView.storageType() === Enums.FileStorageType.Encrypted && this.selectedItem().constructor.name === 'CFileModel'
+					|| oFilesView.storageType() === Enums.FileStorageType.Encrypted && this.selectedItem().IS_FILE
 				)
 			);
 		}
