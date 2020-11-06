@@ -260,7 +260,7 @@ FilesSharePopup.prototype.updateShare = function (sStorage, sPath, sId, aShares)
 
 	if (bHasSubscriber === false)
 	{
-		fCallback();
+		fOnSuccessCallback();
 	}
 };
 
