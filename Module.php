@@ -85,6 +85,22 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 	}
 
+	protected function isNeedToReturnBody()
+	{
+		$sMethod = $this->oHttp->GetPost('Method', null);
+
+        return ((string) \Aurora\System\Router::getItemByIndex(2, '') === 'thumb' ||
+			$sMethod === 'SaveFilesAsTempFiles' ||
+			$sMethod === 'GetFilesForUpload'
+		);
+	}
+
+	protected function isNeedToReturnWithContectDisposition()
+	{
+		$sAction = (string) \Aurora\System\Router::getItemByIndex(2, 'download');
+        return $sAction ===  'download';
+	}
+
 	/**
 	 * Puts file content to $mResult.
 	 * @ignore
@@ -105,9 +121,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$oNode = $oServer->tree->getNodeForPath($sPath);
 			if ($oNode instanceof \Afterlogic\DAV\FS\File)
 			{
-				if ($aArgs['IsThumb'])
+				$sExt = \pathinfo($aArgs['Name'], PATHINFO_EXTENSION);
+				$bNoRedirect = (isset($aArgs['NoRedirect']) && $aArgs['NoRedirect']) ? true : false;
+
+				if ($aArgs['IsThumb'] || $this->isNeedToReturnBody() || \strtolower($sExt) === 'url' || $bNoRedirect)
 				{
-					$mResult = $oNode->get();
+					$mResult = $oNode->get(false);
 				}
 				else
 				{
