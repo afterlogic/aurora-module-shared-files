@@ -151,7 +151,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			else
 			{
 				$mResult = false;
-				echo(\Aurora\System\Managers\Response::GetJsonFromObject('Json', \Aurora\System\Managers\Response::FalseResponse(__METHOD__, 404, 'Not Found')));
+//				echo(\Aurora\System\Managers\Response::GetJsonFromObject('Json', \Aurora\System\Managers\Response::FalseResponse(__METHOD__, 404, 'Not Found')));
+				$this->oHttp->StatusHeader(404);
 				exit;
 			}
 
