@@ -185,6 +185,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$aResult[] = [
 				'PublicId' => basename($aShare['principaluri']),
 				'Access' => $aShare['access']
+				// 'Access' => \Aurora\Modules\SharedFiles\Enums\Access::Read
 			];
 		}
 
