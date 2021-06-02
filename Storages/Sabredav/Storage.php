@@ -35,7 +35,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 
 		$oResult = parent::getFileInfo($sUserPublicId, $sType, $oItem, $sPublicHash, $sPath);
 
-		if (isset($oResult) && ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory))
+		if (isset($oResult) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
 		{
 			$aExtendedProps = $oResult->ExtendedProps;
 			$aExtendedProps['Access'] = (int) $oItem->getAccess();
@@ -94,8 +94,16 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 					if ($subNode && !isset($aResult[$subNode->getPath()]))
 					{
 						list($sSubFullPath, ) = \Sabre\Uri\split(substr($sHref, 12));
-		
-						$oFileInfo = $this->getFileInfo($iUserId, $sType, $subNode, $sPublicHash, $sSubFullPath);
+
+						$oFileInfo = parent::getFileInfo($iUserId, $sType, $subNode, $sPublicHash, $sSubFullPath);
+
+						if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
+						{
+							$aExtendedProps = $oFileInfo->ExtendedProps;
+							$aExtendedProps['Access'] = (int) $oNode->getAccess();
+							$oFileInfo->ExtendedProps = $aExtendedProps;
+						}
+
 //						$oFileInfo->Name = \basename($subNode->getPath());
 
 						$aResult[$subNode->getPath()] = $oFileInfo;
