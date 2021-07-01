@@ -11,7 +11,7 @@ namespace Aurora\Modules\SharedFiles;
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2019, Afterlogic Corp.
- * 
+ *
  * @package Filestorage
  */
 class Manager extends \Aurora\Modules\PersonalFiles\Manager
@@ -27,24 +27,11 @@ class Manager extends \Aurora\Modules\PersonalFiles\Manager
 	}
 
 	/**
-	 * Creates tables required for module work by executing create.sql file.
 	 *
-	 * @return boolean
-	 */
-	public function createTablesFromFile()
-	{
-		$sFilePath = dirname(__FILE__) . '/Sql/create.sql';
-		$bResult = \Aurora\System\Managers\Db::getInstance()->executeSqlFile($sFilePath);
-
-		return $bResult;
-	}
-
-	/**
-	 * 
 	 * @param string $sPublicId
 	 */
 	public function ClearFiles($sPublicId)
 	{
 		$this->oStorage->clearPrivateFiles($sPublicId);
-	}	
+	}
 }

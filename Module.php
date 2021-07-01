@@ -57,7 +57,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Enums\ErrorCodes::DuplicatedUsers			=> $this->i18N('ERROR_DUPLICATE_USERS_BACKEND')
 		];
 
-		$this->subscribeEvent('Dav::CreateTables::after', array($this, 'onAfterCreateTables'));
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
 		$this->subscribeEvent('Files::GetItems::after', array($this, 'onAfterGetItems'), 10000);
 	}
@@ -287,17 +286,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 
 		return $mResult;
-	}
-
-	/**
-	 *
-	 */
-	public function onAfterCreateTables(&$aData, &$mResult)
-	{
-		if ($mResult)
-		{
-			$this->getManager()->createTablesFromFile();
-		}
 	}
 
 	/**
