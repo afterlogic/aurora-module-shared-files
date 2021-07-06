@@ -138,7 +138,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					if ($oUser)
 					{
 						$aArgs = [
-							'UserId' => $oUser->EntityId,
+							'UserId' => $oUser->Id,
 							'ResourceType' => 'file',
 							'ResourceId' => $sResourceId,
 							'Action' => 'get-share'
@@ -311,7 +311,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					if ($oUser)
 					{
 						$aArgs = [
-							'UserId' => $oUser->EntityId,
+							'UserId' => $oUser->Id,
 							'ResourceType' => 'file',
 							'ResourceId' => $sResourceId,
 							'Action' => 'list-share'
