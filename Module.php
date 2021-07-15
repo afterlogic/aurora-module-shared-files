@@ -231,7 +231,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$aOwners = [];
 
 		$oUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
 		{
 			foreach ($Shares as $Share)
 			{
