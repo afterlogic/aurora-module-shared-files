@@ -331,7 +331,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterDeleteUser($aArgs, $mResult)
 	{
-		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Models\User)
 		{
 			$this->oBackend->deleteSharesByPrincipal('principals/' . $this->oBeforeDeleteUser->PublicId);
 		}
