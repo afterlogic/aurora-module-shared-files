@@ -1,51 +1,82 @@
 <div class="popup" style="display: none;">
 	<div class="mask" data-bind="click: cancelPopup"></div>
-	<div class="popup_panel">
+	<div class="popup_panel popup_panel_shares">
 		<span class="close" data-bind="click: cancelPopup"></span>
 		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/TITLE_SHARE_FILE'}"></span>
 
 		<div class="fields">
 			<div class="fieldset shares_personal">
 				<div class="row">
-					<span class="hint" data-bind="text: sDialogHintText()"></span>
+					<span class="hint" data-bind="text: hintText"></span>
 				</div>
-				<div class="row">
-					<label class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_CAN_SEE'}" style="width: auto; margin-bottom: 4px;"></label>
-					<div class="input inputosaurus">
-						<div class="disable_mask" data-bind="visible: true"></div>
-						<div data-bind="customScrollbar: {x: false}">
-							<div class="scroll-inner">
-								<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: guestsDom" />
-							</div>
+				<div class="row" data-bind="if: shares().length === 0">
+					<span class="hint" data-bind="i18n: {'key': '%MODULENAME%/INFO_NO_SHARES'}"></span>
+				</div>
+				<div class="row" data-bind="if: shares().length > 0">
+					<div class="items_list simple_list shares_list" data-bind="foreach: shares">
+						<div class="item item_share">
+							<span class="title" data-bind="text: sPublicId"></span>
+							<span class="del" data-bind="click: function () { $parent.deleteShare(sPublicId); }"></span>
+							<span class="access_select" data-bind="dropdown: {}">
+								<span class="link control" data-bind="text: accessText"></span>
+								<span class="dropdown">
+									<span class="dropdown_helper">
+										<span class="dropdown_arrow"><span></span></span>
+										<span class="dropdown_content" data-bind="foreach: $parent.aAccessList">
+											<span class="item" data-bind="
+												  text: label,
+												  css: {'selected': value === $parent.access()},
+												  click: function () { $parent.access(value); }"></span>
+										</span>
+									</span>
+								</span>
+							</span>
 						</div>
 					</div>
 				</div>
 				<div class="row">
-					<label class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_CAN_EDIT'}" style="width: auto; margin-bottom: 4px; margin-top: 8px;"></label>
-					<div class="input inputosaurus">
-						<div class="disable_mask" data-bind="visible: true"></div>
-						<div data-bind="customScrollbar: {x: false}">
-							<div class="scroll-inner">
-								<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: ownersDom" />
-							</div>
+					<input class="value" spellcheck="false" type="text" autocomplete="on"
+						data-bind="valueUpdate: ['blur', 'afterkeydown'], initDom: selectedTeammateDom,
+						i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS', 'type': 'placeholder'},
+						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
+				</div>
+				<div class="row" data-bind="if: shares().length > 0">
+					<div class="items_list simple_list shares_list">
+						<div class="item">
+							<span class="title">
+								<label class="custom_checkbox checked" data-bind="css: {'checked': shareWithAll}">
+									<span class="icon"></span>
+									<input type="checkbox" id="shareWithAll" data-bind="checked: shareWithAll">
+								</label>
+								<label for="shareWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
+							</span>
+							<span class="del" style="visibility: hidden;"></span>
+							<span class="access_select" data-bind="dropdown: {}, visible: shareWithAll">
+								<span class="link control" data-bind="text: shareWithAllAccessText"></span>
+								<span class="dropdown">
+									<span class="dropdown_helper">
+										<span class="dropdown_arrow"><span></span></span>
+										<span class="dropdown_content" data-bind="foreach: aAccessList">
+											<span class="item" data-bind="
+												  text: label,
+												  css: {'selected': value === $parent.shareWithAllAccess()},
+												  click: function () { $parent.setShareWithAllAccess(value); }"></span>
+										</span>
+									</span>
+								</span>
+							</span>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			<div class="buttons">
-				<span class="button contour_button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_SHOW_HISTORY'}, click: showHistory, visible: bAllowShowHistory"></span>
-				<span
-					class="button"
-					data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
-						click: bSaving() ? false : onSaveClick,
-						css: {'disabled': bSaving()}"
-				></span>
-				<span
-					class="button secondary_button"
-					data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
-						click: bSaving() ? false : cancelPopup,
-						css: {'disabled': bSaving()}"
+				<span class="button contour_button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_SHOW_HISTORY'},
+						click: showHistory, visible: bAllowShowHistory"></span>
+				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
+						click: saveShares, css: {'disabled': isSaving()}"></span>
+				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
+						click: cancelPopup, css: {'disabled': isSaving()}"
 				></span>
 			</div>
 		</div>

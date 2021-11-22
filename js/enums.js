@@ -9,9 +9,9 @@ var
  * @enum {number}
  */
 Enums.SharedFileAccess = {
-	'Full': 0,
 	'Write': 1,
-	'Read': 2
+	'Read': 2,
+	'Reshare': 3
 };
 
 if (typeof window.Enums === 'undefined')

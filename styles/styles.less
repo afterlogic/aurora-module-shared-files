@@ -29,3 +29,54 @@
 .popup_panel .fields .shares_personal .input {
 	width: 450px;
 }
+
+.popup_panel_shares {
+	min-width: 500px;
+}
+
+.simple_list.shares_list {
+	margin: 0;
+	overflow: visible;
+	border: 0;
+	
+	.item_share {
+		border-bottom: 1px solid #d5d9dc !important;
+	}
+
+	.item {
+		cursor: default;
+		overflow: visible;
+
+		.access_select {
+			float: right;
+			position: relative;
+			width: 40%;
+
+			.link {
+				border-bottom: 1px dashed #4477bb;
+				color: #4477bb;
+				text-decoration: none;
+			}
+		}
+		
+		span.del {
+			cursor: pointer;
+			color: #b7b7b7;
+			float: right;
+			font-size: 11pt;
+			margin-top: 2px;
+			text-shadow: 0 1px 0 #ffffff, 0 0 0 #c8c8c8;
+			visibility: hidden;
+
+			.init-icon-font();
+
+			&:before {
+				content: "\e63e";
+			}
+		}
+
+		&:hover span.del {
+			visibility: visible;
+		}
+	}
+}
