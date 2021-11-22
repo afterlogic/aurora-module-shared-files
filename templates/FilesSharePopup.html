@@ -6,42 +6,49 @@
 
 		<div class="fields">
 			<div class="fieldset shares_personal">
+				<!-- ko if: hintText -->
 				<div class="row">
 					<span class="hint" data-bind="text: hintText"></span>
 				</div>
-				<div class="row" data-bind="if: shares().length === 0">
-					<span class="hint" data-bind="i18n: {'key': '%MODULENAME%/INFO_NO_SHARES'}"></span>
-				</div>
-				<div class="row" data-bind="if: shares().length > 0">
-					<div class="items_list simple_list shares_list" data-bind="foreach: shares">
-						<div class="item item_share">
-							<span class="title" data-bind="text: sPublicId"></span>
-							<span class="del" data-bind="click: function () { $parent.deleteShare(sPublicId); }"></span>
-							<span class="access_select" data-bind="dropdown: {}">
-								<span class="link control" data-bind="text: accessText"></span>
-								<span class="dropdown">
-									<span class="dropdown_helper">
-										<span class="dropdown_arrow"><span></span></span>
-										<span class="dropdown_content" data-bind="foreach: $parent.aAccessList">
-											<span class="item" data-bind="
-												  text: label,
-												  css: {'selected': value === $parent.access()},
-												  click: function () { $parent.access(value); }"></span>
+				<!-- /ko -->
+				<div class="row row_shares_list" data-bind="customScrollbar: {x: false}">
+					<div class="scroll-inner" data-bind="initDom: sharesScrollAreaDom">
+						<!-- ko if: shares().length === 0 -->
+						<span class="hint" data-bind="i18n: {'key': '%MODULENAME%/INFO_NO_SHARES'}"></span>
+						<!-- /ko -->
+						<!-- ko if: shares().length > 0 -->
+						<div class="shares_list" data-bind="foreach: shares">
+							<div class="item item_share">
+								<span class="title" data-bind="text: sPublicId"></span>
+								<span class="del" data-bind="click: function () { $parent.deleteShare(sPublicId); }"></span>
+								<span class="access_select" data-bind="dropdown: {}">
+									<span class="dropdown_position_fixed">
+										<span class="dropdown">
+											<span class="dropdown_helper">
+												<span class="dropdown_arrow"><span></span></span>
+												<span class="dropdown_content" data-bind="foreach: $parent.aAccessList">
+													<span class="item" data-bind="text: label,
+														  css: {'selected': value === $parent.access()},
+														  click: function () { $parent.access(value); }"></span>
+												</span>
+											</span>
 										</span>
 									</span>
+									<span class="link control" data-bind="text: accessText"></span>
 								</span>
-							</span>
+							</div>
 						</div>
+						<!-- /ko -->
 					</div>
 				</div>
-				<div class="row">
-					<input class="value" spellcheck="false" type="text" autocomplete="on"
+				<div class="row row_new_share">
+					<input class="input" spellcheck="false" type="text" autocomplete="on"
 						data-bind="valueUpdate: ['blur', 'afterkeydown'], initDom: selectedTeammateDom,
 						i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS', 'type': 'placeholder'},
 						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
 				</div>
-				<div class="row" data-bind="if: shares().length > 0">
-					<div class="items_list simple_list shares_list">
+				<div class="row">
+					<div class="shares_list">
 						<div class="item">
 							<span class="title">
 								<label class="custom_checkbox checked" data-bind="css: {'checked': shareWithAll}">
@@ -50,7 +57,7 @@
 								</label>
 								<label for="shareWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
 							</span>
-							<span class="del" style="visibility: hidden;"></span>
+							<span class="del"><!-- not displayed, holds the place --></span>
 							<span class="access_select" data-bind="dropdown: {}, visible: shareWithAll">
 								<span class="link control" data-bind="text: shareWithAllAccessText"></span>
 								<span class="dropdown">

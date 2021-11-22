@@ -36,6 +36,7 @@ function CFilesSharePopup()
 	];
 
 	this.shares = ko.observableArray([]);
+	this.sharesScrollAreaDom = ko.observable(null);
 	
 	this.selectedTeammateDom = ko.observable(null);
 	this.selectedTeammateData = ko.observable(null);
@@ -47,8 +48,15 @@ function CFilesSharePopup()
 			}));
 			this.selectedTeammateData(null);
 			setTimeout(function () {
-				if (this.selectedTeammateData() === null) {
+				if (this.selectedTeammateData() === null && this.selectedTeammateDom() !== null) {
 					this.selectedTeammateDom().val('');
+				}
+				var
+					oScrollArea = this.sharesScrollAreaDom(),
+					oListArea = oScrollArea !== null ? oScrollArea.find('.shares_list') : null
+				;
+				if (oListArea !== null) {
+					oScrollArea.scrollTop(oListArea.height() - oScrollArea.height());
 				}
 			}.bind(this));
 		}
