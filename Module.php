@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Aurora\Api;
 use Aurora\System\Enums\FileStorageType;
 
 /**
@@ -223,7 +224,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 *
 	 * @return string
 	 */
-	public function getNonExistentFileName($principalUri, $sFileName)
+	public function getNonExistentFileName($principalUri, $sFileName, $sPath = '')
 	{
 		$iIndex = 0;
 		$sFileNamePathInfo = pathinfo($sFileName);
@@ -239,11 +240,18 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$sNameWOExt = $sFileNamePathInfo['filename'];
 		}
 
-		while ($this->oBackend->getSharedFileByUid($principalUri, $sFileName))
+		while ($this->oBackend->getSharedFileByUid($principalUri, $sFileName, $sPath))
 		{
 			$sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
 			$iIndex++;
 		}
+
+		$sFileName = \Aurora\Modules\Files\Module::Decorator()->GetNonExistentFileName(
+			Api::getAuthenticatedUserId(),
+			FileStorageType::Personal,
+			$sPath,
+			$sFileName
+		);
 
 		return $sFileName;
 	}
@@ -261,9 +269,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
 		{
 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
-			$Path =  $Path . '/' . $Id;
+			$FullPath =  $Path . '/' . $Id;
 			
-			$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
+			$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($FullPath, '/'));
 			$aOldSharePrincipals = array_map(function ($aShareItem) {
 				return $aShareItem['principaluri'];
 			}, $aShares);
@@ -278,7 +286,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			);
 			foreach ($aItemsToDelete as $sItem) 
 			{
-				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $Path);
+				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $FullPath);
 			}
 
 			$aItemsToCreate = array_diff(
@@ -329,11 +337,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				if (in_array('principals/' . $aShare['PublicId'], $aItemsToCreate))
 				{
 					$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
-					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
 				} 
 				else if(in_array('principals/' . $aShare['PublicId'], $aItemsToUpdate))
 				{
-					$mResult = $mResult && $this->oBackend->updateSharedFile('principals/' . $sUserPublicId, $Storage, $Path, 'principals/' . $aShare['PublicId'], $aShare['Access']);
+					$mResult = $mResult && $this->oBackend->updateSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, 'principals/' . $aShare['PublicId'], $aShare['Access']);
 				}
 				if ($mResult)
 				{
@@ -342,7 +350,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 			}
 			
-			$sResourceId = $Storage . '/' . \ltrim(\ltrim($Path, '/'));
+			$sResourceId = $Storage . '/' . \ltrim(\ltrim($FullPath, '/'));
 			$aArgs = [
 				'UserId' => $UserId,
 				'ResourceType' => 'file',

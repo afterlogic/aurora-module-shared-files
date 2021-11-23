@@ -38,7 +38,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 		if (isset($oResult) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
 		{
 			$aExtendedProps = $oResult->ExtendedProps;
-			$aExtendedProps['Access'] = (int) $oItem->getAccess();
+			$aExtendedProps['SharedWithMeAccess'] = (int) $oItem->getAccess();
 			$oResult->ExtendedProps = $aExtendedProps;
 		}
 
@@ -100,7 +100,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 						if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
 						{
 							$aExtendedProps = $oFileInfo->ExtendedProps;
-							$aExtendedProps['Access'] = (int) $oNode->getAccess();
+							$aExtendedProps['SharedWithMeAccess'] = (int) $oNode->getAccess();
 							$oFileInfo->ExtendedProps = $aExtendedProps;
 						}
 
