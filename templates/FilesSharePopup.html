@@ -5,7 +5,7 @@
 		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/TITLE_SHARE_FILE'}"></span>
 
 		<div class="fields">
-			<div class="fieldset shares_personal">
+			<div class="fieldset">
 				<!-- ko if: hintText -->
 				<div class="row">
 					<span class="hint" data-bind="text: hintText"></span>
@@ -51,23 +51,23 @@
 					<div class="shares_list">
 						<div class="item">
 							<span class="title">
-								<label class="custom_checkbox checked" data-bind="css: {'checked': shareWithAll}">
+								<label class="custom_checkbox checked" data-bind="css: {'checked': sharedWithAll}">
 									<span class="icon"></span>
-									<input type="checkbox" id="shareWithAll" data-bind="checked: shareWithAll">
+									<input type="checkbox" id="sharedWithAll" data-bind="checked: sharedWithAll">
 								</label>
-								<label for="shareWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
+								<label for="sharedWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
 							</span>
 							<span class="del"><!-- not displayed, holds the place --></span>
-							<span class="access_select" data-bind="dropdown: {}, visible: shareWithAll">
-								<span class="link control" data-bind="text: shareWithAllAccessText"></span>
+							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll">
+								<span class="link control" data-bind="text: sharedWithAllAccessText"></span>
 								<span class="dropdown">
 									<span class="dropdown_helper">
 										<span class="dropdown_arrow"><span></span></span>
 										<span class="dropdown_content" data-bind="foreach: aAccessList">
 											<span class="item" data-bind="
 												  text: label,
-												  css: {'selected': value === $parent.shareWithAllAccess()},
-												  click: function () { $parent.setShareWithAllAccess(value); }"></span>
+												  css: {'selected': value === $parent.sharedWithAllAccess()},
+												  click: function () { $parent.setSharedWithAllAccess(value); }"></span>
 										</span>
 									</span>
 								</span>

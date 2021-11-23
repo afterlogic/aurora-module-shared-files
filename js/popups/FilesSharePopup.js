@@ -62,10 +62,10 @@ function CFilesSharePopup()
 		}
 	}, this);
 
-	this.shareWithAll = ko.observable(false);
-	this.shareWithAllAccess = ko.observable(Enums.SharedFileAccess.Read);
-	this.shareWithAllAccessText = ko.computed(function () {
-		switch (this.shareWithAllAccess()) {
+	this.sharedWithAll = ko.observable(false);
+	this.sharedWithAllAccess = ko.observable(Enums.SharedFileAccess.Read);
+	this.sharedWithAllAccessText = ko.computed(function () {
+		switch (this.sharedWithAllAccess()) {
 			case Enums.SharedFileAccess.Reshare: return TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_RIGHT');
 			case Enums.SharedFileAccess.Write: return TextUtils.i18n('%MODULENAME%/LABEL_WRITE_RIGHT');
 			default: return TextUtils.i18n('%MODULENAME%/LABEL_READ_RIGHT');
@@ -102,8 +102,8 @@ CFilesSharePopup.prototype.onOpen = function (oFileItem)
 		this.shares(_.map(aSharesData, function (oShareData) {
 			return new CShareModel(oShareData);
 		}));
-		this.shareWithAll(Types.pBool(oFileItem.oExtendedProps.ShareWithAll));
-		this.shareWithAllAccess(Types.pEnum(oFileItem.oExtendedProps.ShareWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
+		this.sharedWithAll(!!oFileItem.oExtendedProps.SharedWithAllAccess);
+		this.sharedWithAllAccess(Types.pEnum(oFileItem.oExtendedProps.SharedWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
 	}
 };
 
@@ -153,9 +153,9 @@ CFilesSharePopup.prototype.deleteShare = function (sPublicId)
 	}));
 };
 
-CFilesSharePopup.prototype.setShareWithAllAccess = function (iShareWithAllAccess)
+CFilesSharePopup.prototype.setSharedWithAllAccess = function (iSharedWithAllAccess)
 {
-	this.shareWithAllAccess(iShareWithAllAccess);
+	this.sharedWithAllAccess(iSharedWithAllAccess);
 };
 
 CFilesSharePopup.prototype.saveShares = function ()
@@ -176,8 +176,7 @@ CFilesSharePopup.prototype.saveShares = function ()
 			'Path': this.oFileItem.path(),
 			'Id': this.oFileItem.id(),
 			'Shares': aShares,
-			'ShareWithAll': this.shareWithAll(),
-			'ShareWithAllAccess': this.shareWithAllAccess(),
+			'SharedWithAllAccess': this.sharedWithAll() ? this.sharedWithAllAccess() : undefined,
 			'IsDir': !this.oFileItem.IS_FILE
 		},
 		fOnSuccessCallback = _.bind(function () {
@@ -221,10 +220,9 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest
 		}
 
 		this.oFileItem.oExtendedProps.Shares = oRequest.Parameters.Shares;
-		this.oFileItem.oExtendedProps.ShareWithAll = oRequest.Parameters.ShareWithAll;
-		this.oFileItem.oExtendedProps.ShareWithAllAccess = oRequest.Parameters.ShareWithAllAccess;
+		this.oFileItem.oExtendedProps.SharedWithAllAccess = oRequest.Parameters.SharedWithAllAccess;
 
-		this.oFileItem.isShared(this.oFileItem.oExtendedProps.Shares.length > 0 || this.oFileItem.oExtendedProps.ShareWithAll);
+		this.oFileItem.isShared(this.oFileItem.oExtendedProps.Shares.length > 0 || !!this.oFileItem.oExtendedProps.SharedWithAllAccess);
 		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
 		this.oFileItem = null;
 		this.closePopup();
