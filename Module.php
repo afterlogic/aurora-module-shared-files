@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Aurora\System\Enums\FileStorageType;
+
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
@@ -68,11 +70,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetItems($aArgs, &$mResult)
 	{
-		if ($this->checkStorageType($aArgs['Type']))
-		{
-			parent::onAfterGetItems($aArgs, $mResult);
-		}
-
 		if (is_array($mResult))
 		{
 			foreach ($mResult as $oItem)
@@ -159,16 +156,43 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 	}
 
+	public function onAfterMove(&$aArgs, &$mResult)
+	{
+		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
+		foreach ($aArgs['Files'] as $aFile)
+		{
+			if ($aFile['FromType'] === self::$sStorageType) {
+				if ($aArgs['ToType'] === FileStorageType::Personal) {
+					$this->oBackend->updateSharedFileSharePath('principals/' . $sUserPublicId, $aFile['Name'], $aFile['FromPath'], $aArgs['ToPath']);
+				} else {
+					parent::onAfterMove($aArgs, $mResult);
+				}
+			}
+		}
+	}
+
 	public function onAfterDelete(&$aArgs, &$mResult)
 	{
 		$iUserId = $aArgs['UserId'];
 		$sStorage = $aArgs['Type'];
 		$aItems = $aArgs['Items'];
+		$sPath = $aArgs['Path'];
 
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
+		$oServer = \Afterlogic\DAV\Server::getInstance();
+
 		foreach ($aItems as $aItem)
 		{
-			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
+			$sPath = 'files/' . $aArgs['Type'] . $aItem['Path'] . '/' . $aItem['Name'];
+
+			$oNode = $oServer->tree->getNodeForPath($sPath);
+			if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+			{
+				$oNode->delete();
+			}
+
+//			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
+			$this->oBackend->deleteShare('principals/' . $sUserPublicId, $aItem['Path'] . '/' . $aItem['Name']);
 		}
 	}
 
@@ -224,15 +248,49 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		return $sFileName;
 	}
 
+
 	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
-		$mResult = false;
+		$mResult = true;
 		$aGuests = [];
 		$aOwners = [];
+		$aReshare = [];
+		$aUpdateShares = [];
 
 		$oUser = \Aurora\System\Api::getAuthenticatedUser();
 		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
 		{
+			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
+			$Path =  $Path . '/' . $Id;
+			
+			$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
+			$aOldSharePrincipals = array_map(function ($aShareItem) {
+				return $aShareItem['principaluri'];
+			}, $aShares);
+			
+			$aNewSharePrincipals = array_map(function ($aShareItem) {
+				return 'principals/' . $aShareItem['PublicId'];
+			}, $Shares);
+
+			$aItemsToDelete = array_diff(
+				$aOldSharePrincipals,
+				$aNewSharePrincipals
+			);
+			foreach ($aItemsToDelete as $sItem) 
+			{
+				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $Path);
+			}
+
+			$aItemsToCreate = array_diff(
+				$aNewSharePrincipals,
+				$aOldSharePrincipals
+			);
+
+			$aItemsToUpdate = array_intersect(
+				$aOldSharePrincipals,
+				$aNewSharePrincipals
+			);
+
 			foreach ($Shares as $Share)
 			{
 				if ($oUser->PublicId === $Share['PublicId'])
@@ -247,12 +305,17 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				{
 					$aGuests[] = $Share['PublicId'];
 				}
-				else//write TODO: replace with constant
+				else if ($Share['Access'] === Enums\Access::Write)
 				{
 					$aOwners[] = $Share['PublicId'];
 				}
+				else if ($Share['Access'] === Enums\Access::Reshare)
+				{
+					$aReshare[] = $Share['PublicId'];
+				}
+				$aUpdateShares[] = $Share['PublicId'];
 			}
-			$aDuplicatedUsers = array_intersect($aOwners, $aGuests);
+			$aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
 			if (!empty($aDuplicatedUsers))
 			{
 				throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::DuplicatedUsers);
@@ -260,20 +323,25 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
-			$Path =  $Path . '/' . $Id;
-
-			$mResult = $this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $Storage, $Path);
 			$aGuestPublicIds = [];
 			foreach ($Shares as $aShare)
 			{
-				$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
-				$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+				if (in_array('principals/' . $aShare['PublicId'], $aItemsToCreate))
+				{
+					$Id = $this->getNonExistentFileName('principals/' . $aShare['PublicId'], $Id);
+					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $Path, $Id, 'principals/' . $aShare['PublicId'], $aShare['Access'], $IsDir);
+				} 
+				else if(in_array('principals/' . $aShare['PublicId'], $aItemsToUpdate))
+				{
+					$mResult = $mResult && $this->oBackend->updateSharedFile('principals/' . $sUserPublicId, $Storage, $Path, 'principals/' . $aShare['PublicId'], $aShare['Access']);
+				}
 				if ($mResult)
 				{
 					$sAccess = (int) $aShare['Access'] === Enums\Access::Read ? '(r)' : '(w)';
 					$aGuestPublicIds[] = $aShare['PublicId'] . $sAccess;
 				}
 			}
+			
 			$sResourceId = $Storage . '/' . \ltrim(\ltrim($Path, '/'));
 			$aArgs = [
 				'UserId' => $UserId,
@@ -296,6 +364,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($mResult)
 		{
 			$oServer = \Afterlogic\DAV\Server::getInstance();
+
 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
 			try
 			{
