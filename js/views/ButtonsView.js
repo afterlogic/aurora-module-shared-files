@@ -100,6 +100,7 @@ ButtonsView.prototype.useFilesViewData = function (oFilesView)
 					oFilesView.storageType() === Enums.FileStorageType.Personal
 					|| oFilesView.storageType() === Enums.FileStorageType.Encrypted && this.selectedItem().IS_FILE
 				)
+				&& (!this.selectedItem().bSharedWithMe || this.selectedItem().bSharedWithMeAccessReshare)
 			);
 		}
 	);
