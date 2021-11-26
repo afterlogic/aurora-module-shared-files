@@ -7,7 +7,9 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Afterlogic\DAV\Server;
 use Aurora\Api;
+use Aurora\Modules\Core\Module as CoreModule;
 use Aurora\System\Enums\FileStorageType;
 
 /**
@@ -157,20 +159,21 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 	}
 
-	public function onAfterMove(&$aArgs, &$mResult)
-	{
-		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
-		foreach ($aArgs['Files'] as $aFile)
-		{
-			if ($aFile['FromType'] === self::$sStorageType) {
-				if ($aArgs['ToType'] === FileStorageType::Personal) {
-					$this->oBackend->updateSharedFileSharePath('principals/' . $sUserPublicId, $aFile['Name'], $aFile['FromPath'], $aArgs['ToPath']);
-				} else {
-					parent::onAfterMove($aArgs, $mResult);
-				}
-			}
-		}
-	}
+	// public function onAfterMove(&$aArgs, &$mResult)
+	// {
+	// 	$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
+	// 	foreach ($aArgs['Files'] as $aFile)
+	// 	{
+	// 		$oNode = Server::getNodeForPath('files/' . $aFile['FromType'] . '/' . $aFile['FromPath'] . '/' . $aFile['Name']);
+	// 		if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
+	// 			if ($aArgs['ToType'] === FileStorageType::Personal) {
+	// 				$mResult = $this->oBackend->updateSharedFileSharePath('principals/' . $sUserPublicId, $aFile['Name'], $aFile['FromPath'], $aArgs['ToPath']);
+	// 			} else {
+	// 				parent::onAfterMove($aArgs, $mResult);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	public function onAfterDelete(&$aArgs, &$mResult)
 	{
@@ -189,7 +192,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$oNode = $oServer->tree->getNodeForPath($sPath);
 			if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
 			{
-				$oNode->delete();
+				$mResult = $oNode->delete();
 			}
 
 //			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
@@ -245,13 +248,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
 			$iIndex++;
 		}
+		list(, $sUserPublicId) = \Sabre\Uri\split($principalUri);
+		$oUser = CoreModule::getInstance()->GetUserByPublicId($sUserPublicId);
 
-		$sFileName = \Aurora\Modules\Files\Module::Decorator()->GetNonExistentFileName(
-			Api::getAuthenticatedUserId(),
-			FileStorageType::Personal,
-			$sPath,
-			$sFileName
-		);
+		if ($oUser) {
+			$sPrevState = Api::skipCheckUserRole(true);
+			$sFileName = \Aurora\Modules\Files\Module::Decorator()->GetNonExistentFileName(
+				$oUser->Id,
+				FileStorageType::Personal,
+				$sPath,
+				$sFileName
+			);
+			Api::skipCheckUserRole($sPrevState);
+		}
 
 		return $sFileName;
 	}
