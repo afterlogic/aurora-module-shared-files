@@ -243,7 +243,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$sNameWOExt = $sFileNamePathInfo['filename'];
 		}
 
-		while ($this->oBackend->getSharedFileByUid($principalUri, $sFileName, $sPath))
+		while ($this->oBackend->getSharedFileByUidWithPath($principalUri, $sFileName, $sPath))
 		{
 			$sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
 			$iIndex++;

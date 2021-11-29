@@ -97,12 +97,12 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 
 						$oFileInfo = parent::getFileInfo($iUserId, $sType, $subNode, $sPublicHash, $sSubFullPath);
 
-						if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
-						{
-							$aExtendedProps = $oFileInfo->ExtendedProps;
-							$aExtendedProps['SharedWithMeAccess'] = (int) $oNode->getAccess();
-							$oFileInfo->ExtendedProps = $aExtendedProps;
-						}
+						// if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
+						// {
+						// 	$aExtendedProps = $oFileInfo->ExtendedProps;
+						// 	$aExtendedProps['SharedWithMeAccess'] = (int) $oNode->getAccess();
+						// 	$oFileInfo->ExtendedProps = $aExtendedProps;
+						// }
 
 //						$oFileInfo->Name = \basename($subNode->getPath());
 
