@@ -207,6 +207,7 @@ CFilesSharePopup.prototype.saveShares = function ()
 			'Storage': this.oFileItem.storageType(),
 			'Path': this.oFileItem.path(),
 			'Id': this.oFileItem.id(),
+			'Shared': this.oFileItem.bSharedWithMe,
 			'Shares': aShares,
 			'SharedWithAllAccess': this.sharedWithAll() ? this.sharedWithAllAccess() : undefined,
 			'IsDir': !this.oFileItem.IS_FILE
