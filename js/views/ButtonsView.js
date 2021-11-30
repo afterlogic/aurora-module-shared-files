@@ -1,6 +1,7 @@
 'use strict';
 
 var
+	_ = require('underscore'),
 	ko = require('knockout'),
 	
 	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
@@ -8,6 +9,7 @@ var
 	
 	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 	AlertPopup = require('%PathToCoreWebclientModule%/js/popups/AlertPopup.js'),
+	ConfirmPopup = require('%PathToCoreWebclientModule%/js/popups/ConfirmPopup.js'),
 	
 	FilesSharePopup = require('modules/%ModuleName%/js/popups/FilesSharePopup.js')
 ;
@@ -15,100 +17,62 @@ var
 /**
  * @constructor
  */
-function ButtonsView()
+function CButtonsView()
 {
-	this.shareTooltip = ko.computed(function () {
-		return TextUtils.i18n('%MODULENAME%/ACTION_SHARE');
-	}, this);
-	this.storageType = null;
-	this.isUploadEnabled = ko.observable(false);
 }
 
-ButtonsView.prototype.ViewTemplate = '%ModuleName%_ButtonsView';
+CButtonsView.prototype.ViewTemplate = '%ModuleName%_ButtonsView';
 
-ButtonsView.prototype.useFilesViewData = function (oFilesView)
+CButtonsView.prototype.useFilesViewData = function (oFilesView)
 {
-	this.selectedItem = oFilesView.selector.itemSelected;
-	this.storageType = oFilesView.storageType;
-	oFilesView.pathItems.subscribe(function () {
+	this.isShareVisible = ko.computed(function () {
+		return !oFilesView.isCorporateStorage();
+	});
+
+	this.shareCommand = Utils.createCommand(oFilesView, this.executeShare, oFilesView.isShareAllowed);
+
+	this.isLeaveShareAllowed = ko.computed(function () {
 		var
-			iPathItemsLength = oFilesView.pathItems().length,
-			oLastPathItem = oFilesView.pathItems()[iPathItemsLength - 1] || false
+			aItems = oFilesView.selector.listCheckedAndSelected(),
+			oSelectedItem = aItems.length === 1 ? aItems[0] : null
 		;
-
-		//Disable toolbar buttons for "root" directory of Shared files
-		//and for folders with access level "Read"
-		if (!this.isSharedStorage()
-			|| (iPathItemsLength !== 0
-				&& oLastPathItem.oExtendedProps
-				&& oLastPathItem.oExtendedProps.Access
-				&& oLastPathItem.oExtendedProps.Access === Enums.SharedFileAccess.Write
-			)
-		)
-		{
-			oFilesView.enableButton(oFilesView.createFolderButtonModules, '%ModuleName%');
-			oFilesView.enableButton(oFilesView.renameButtonModules, '%ModuleName%');
-			oFilesView.enableButton(oFilesView.shortcutButtonModules, '%ModuleName%');
-			this.isUploadEnabled(true);
-		}
-		else
-		{
-			oFilesView.disableButton(oFilesView.createFolderButtonModules, '%ModuleName%');
-			oFilesView.disableButton(oFilesView.renameButtonModules, '%ModuleName%');
-			oFilesView.disableButton(oFilesView.shortcutButtonModules, '%ModuleName%');
-			this.isUploadEnabled(false);
-		}
-		//Disable delete buttons for folders with access level "Read"
-		if (this.isSharedStorage()
-			&& iPathItemsLength !== 0
-			&& oLastPathItem.oExtendedProps
-			&& oLastPathItem.oExtendedProps.Access
-			&& oLastPathItem.oExtendedProps.Access !== Enums.SharedFileAccess.Write
-		)
-		{
-			oFilesView.disableButton(oFilesView.deleteButtonModules, '%ModuleName%');
-		}
-		else
-		{
-			oFilesView.enableButton(oFilesView.deleteButtonModules, '%ModuleName%');
-		}
-	}, this);
-	this.shareCommand = Utils.createCommand(
-		this,
-		function () {
-			if (this.selectedItem().IS_FILE && this.selectedItem().bIsSecure() && this.selectedItem().oExtendedProps && !this.selectedItem().oExtendedProps.ParanoidKey)
-			{
-				Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
-			}
-			else
-			{
-				Popups.showPopup(FilesSharePopup, [this.selectedItem()]);
-			}
-		},
-		function () {
-			// Conditions for button activity:
-			// Personal: one file or one folder
-			// Encrypted: one file only
-			// Corporate: nothing
-			// Shared: nothing
-			return (
-				!oFilesView.isZipFolder()
-				&& this.selectedItem() !== null
-				&& oFilesView.selector.listCheckedAndSelected().length === 1
-				&& oFilesView.checkedReadyForOperations()
-				&& (
-					oFilesView.storageType() === Enums.FileStorageType.Personal
-					|| oFilesView.storageType() === Enums.FileStorageType.Encrypted && this.selectedItem().IS_FILE
-				)
-				&& (!this.selectedItem().bSharedWithMe || this.selectedItem().bSharedWithMeAccessReshare)
-			);
-		}
-	);
+		return	!oFilesView.isZipFolder() && !oFilesView.sharedParentFolder()
+				&& oFilesView.allSelectedFilesReady()
+				&& oSelectedItem && oSelectedItem.bSharedWithMe;
+	});
+	this.leaveShareCommand = Utils.createCommand(oFilesView, this.executeLeaveShare, this.isLeaveShareAllowed);
 };
 
-ButtonsView.prototype.isSharedStorage = function ()
+CButtonsView.prototype.executeShare = function ()
 {
-	return this.storageType() === Enums.FileStorageType.Shared;
+	// !!! this = oFilesView
+	var oSelectedItem = this.selector.itemSelected();
+	if (oSelectedItem.IS_FILE && oSelectedItem.bIsSecure() && oSelectedItem.oExtendedProps && !oSelectedItem.oExtendedProps.ParanoidKey) {
+		Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
+	} else {
+		Popups.showPopup(FilesSharePopup, [oSelectedItem]);
+	}
 };
 
-module.exports = new ButtonsView();
+CButtonsView.prototype.executeLeaveShare = function ()
+{
+	// !!! this = oFilesView
+	var
+		aChecked = this.selector.listCheckedAndSelected() || [],
+		oSelectedItem = aChecked.length === 1 ? aChecked[0] : null,
+		sConfirm = ''
+	;
+	
+	if (oSelectedItem.IS_FILE) {
+		sConfirm = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FILE_SHARE');
+	} else {
+		sConfirm = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FOLDER_SHARE');
+	}
+	
+	if (!this.bPublic && oSelectedItem) {
+		this.selector.useKeyboardKeys(false);
+		Popups.showPopup(ConfirmPopup, [sConfirm, _.bind(this.deleteItems, this, aChecked), '', TextUtils.i18n('%MODULENAME%/ACTION_LEAVE_SHARE')]);
+	}
+};
+
+module.exports = new CButtonsView();

@@ -59,13 +59,6 @@ module.exports = function (oAppData) {
 						oFolder.isShared(true);
 					}
 				});
-				App.subscribeEvent('Jua::FileUpload::isUploadAvailable', function (oParams) {
-					if (!getButtonView().isUploadEnabled() && oParams.sModuleName === "Files")
-					{
-						Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_NOT_ENOUGH_PERMISSIONS'));
-						oParams.isUploadAvailable(false);
-					}
-				});
 			},
 			getFilesSharePopup: function () {
 				return require('modules/SharedFiles/js/popups/FilesSharePopup.js');
