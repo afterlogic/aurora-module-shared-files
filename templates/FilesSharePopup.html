@@ -57,8 +57,7 @@
 								</label>
 								<label for="sharedWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
 							</span>
-							<span class="del"><!-- not displayed, holds the place --></span>
-							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll">
+							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll" style="float: none; width: auto; margin-left: 6px;">
 								<span class="link control" data-bind="text: sharedWithAllAccessText"></span>
 								<span class="dropdown">
 									<span class="dropdown_helper">
@@ -72,6 +71,9 @@
 									</span>
 								</span>
 							</span>
+							<!-- ko if: permissionsWarningText -->
+							<span data-bind="text: permissionsWarningText" style="margin-left: 6px; width: 50%; display: inline-block; vertical-align: top;"></span>
+							<!-- /ko -->
 						</div>
 					</div>
 				</div>

@@ -30,9 +30,9 @@ function CFilesSharePopup()
 	this.oFileItem = null;
 	this.hintText = ko.observable('');
 	this.aAccessList = [
-		{ value: Enums.SharedFileAccess.Read, label: TextUtils.i18n('%MODULENAME%/LABEL_READ_RIGHT') },
-		{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_RIGHT') },
-		{ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_RIGHT') }
+		{ value: Enums.SharedFileAccess.Read, label: TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS') },
+		{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS') },
+		{ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') }
 	];
 
 	this.shares = ko.observableArray([]);
@@ -66,10 +66,34 @@ function CFilesSharePopup()
 	this.sharedWithAllAccess = ko.observable(Enums.SharedFileAccess.Read);
 	this.sharedWithAllAccessText = ko.computed(function () {
 		switch (this.sharedWithAllAccess()) {
-			case Enums.SharedFileAccess.Reshare: return TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_RIGHT');
-			case Enums.SharedFileAccess.Write: return TextUtils.i18n('%MODULENAME%/LABEL_WRITE_RIGHT');
-			default: return TextUtils.i18n('%MODULENAME%/LABEL_READ_RIGHT');
+			case Enums.SharedFileAccess.Reshare: return TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS');
+			case Enums.SharedFileAccess.Write: return TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS');
+			default: return TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS');
 		}
+	}, this);
+	
+	this.permissionsWarningText = ko.computed(function () {
+		var
+			aLowerPermissionShares = [],
+			sWarning = ''
+		;
+		if (this.sharedWithAll()) {
+			if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write) {
+				aLowerPermissionShares = _.filter(this.shares(), function (oShare) {
+					return oShare.access() === Enums.SharedFileAccess.Read;
+				});
+			} else if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Reshare) {
+				aLowerPermissionShares = _.filter(this.shares(), function (oShare) {
+					return oShare.access() === Enums.SharedFileAccess.Read || oShare.access() === Enums.SharedFileAccess.Write;
+				});
+			}
+		}
+		if (aLowerPermissionShares.length > 0) {
+			sWarning = TextUtils.i18n('%MODULENAME%/WARNING_PERMISSIONS_UPGRADE_PLURAL', {
+				'USER': aLowerPermissionShares[0].sPublicId
+			}, '', aLowerPermissionShares.length);
+		}
+		return sWarning;
 	}, this);
 
 	this.isSaving = ko.observable(false);
@@ -166,11 +190,19 @@ CFilesSharePopup.prototype.saveShares = function ()
 
 	var
 		aShares = _.map(this.shares(), function (oShare) {
+			var iAcess = oShare.access();
+			if (this.sharedWithAll()) {
+				if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && iAcess !== Enums.SharedFileAccess.Reshare) {
+					iAcess = Enums.SharedFileAccess.Write;
+				} else if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Reshare) {
+					iAcess = Enums.SharedFileAccess.Reshare;
+				}
+			}
 			return {
 				PublicId: oShare.sPublicId,
-				Access: oShare.access()
+				Access: iAcess
 			};
-		}),
+		}, this),
 		oParameters = {
 			'Storage': this.oFileItem.storageType(),
 			'Path': this.oFileItem.path(),
