@@ -41,7 +41,7 @@ module.exports = function (oAppData) {
 
 					if (bIsShared)
 					{
-						oFile.isShared(true);
+						oFile.sharedWithOthers(true);
 					}
 				});
 				App.subscribeEvent('FilesWebclient::ParseFolder::after', function (aParams) {
@@ -56,7 +56,7 @@ module.exports = function (oAppData) {
 
 					if (bIsShared)
 					{
-						oFolder.isShared(true);
+						oFolder.sharedWithOthers(true);
 					}
 				});
 			},

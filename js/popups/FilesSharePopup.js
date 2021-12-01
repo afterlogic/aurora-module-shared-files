@@ -207,7 +207,7 @@ CFilesSharePopup.prototype.saveShares = function ()
 			'Storage': this.oFileItem.storageType(),
 			'Path': this.oFileItem.path(),
 			'Id': this.oFileItem.id(),
-			'Shared': this.oFileItem.bSharedWithMe,
+			'Shared': this.oFileItem.bSharedWithMeFirstLevel,
 			'Shares': aShares,
 			'SharedWithAllAccess': this.sharedWithAll() ? this.sharedWithAllAccess() : undefined,
 			'IsDir': !this.oFileItem.IS_FILE
@@ -255,7 +255,7 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (oResponse, oRequest
 		this.oFileItem.oExtendedProps.Shares = oRequest.Parameters.Shares;
 		this.oFileItem.oExtendedProps.SharedWithAllAccess = oRequest.Parameters.SharedWithAllAccess;
 
-		this.oFileItem.isShared(this.oFileItem.oExtendedProps.Shares.length > 0 || !!this.oFileItem.oExtendedProps.SharedWithAllAccess);
+		this.oFileItem.sharedWithOthers(this.oFileItem.oExtendedProps.Shares.length > 0 || !!this.oFileItem.oExtendedProps.SharedWithAllAccess);
 		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
 		this.oFileItem = null;
 		this.closePopup();
