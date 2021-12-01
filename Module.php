@@ -33,6 +33,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	protected static $iStorageOrder = 30;
 
 	/**
+	 * Indicates if it's allowed to move files/folders to this storage.
+	 * @var type bool
+	 */
+	protected static $bIsDroppable = false;
+
+	/**
 	 *
 	 */
 	protected $oBackend;
