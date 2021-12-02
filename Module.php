@@ -121,7 +121,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			// $oServer->setUser(
 			// 	\Aurora\Api::getUserPublicIdById($aArgs['UserId'])
 			// );
-			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'] . '/' .  $aArgs['Name'];
+			$sIsShared = isset($aArgs['Shared']) ? !! $aArgs['Shared'] : false;
+			$sType = $aArgs['Type'];
+			if ($sIsShared && !empty($aArgs['Path'])) {
+				$sType = FileStorageType::Personal;
+			}
+			$sPath = 'files/' . $sType . '/' .trim($aArgs['Path'], '/') . '/' .  $aArgs['Name'];
 
 			$oNode = $oServer->tree->getNodeForPath($sPath);
 			if ($oNode instanceof \Afterlogic\DAV\FS\File)
@@ -386,7 +391,13 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		if ($mResult)
 		{
+			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
 			$oServer = \Afterlogic\DAV\Server::getInstance();
+
+			if (true /*isset($aArgs['Shared']) && !!$aArgs['Shared'] === true*/)
+			{
+//				$aShare = $this->oBackend->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $aArgs['Path'], $aArgs['Id']);
+			}
 
 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
 			try
