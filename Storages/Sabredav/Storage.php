@@ -135,8 +135,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 					$sHref = $oItem['href'];
 					list(, $sName) = \Sabre\Uri\split($sHref);
 	
-					if (empty($sPattern) || 
-							(/*isset($oItem['200']['{DAV:}displayname']) &&*/ fnmatch("*" . $sPattern . "*", $sName/*$oItem['200']['{DAV:}displayname']*/)))
+					if (empty($sPattern) || (fnmatch("*" . $sPattern . "*", $sName, FNM_CASEFOLD)))
 					{
 						$subNode = $oServer->tree->getNodeForPath($sHref);
 						$sSharePath = isset($oItem[200]['{DAV:}share-path']) ? $oItem[200]['{DAV:}share-path'] : '';
@@ -150,12 +149,12 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 							list($sSubFullPath, ) = \Sabre\Uri\split($aHref[2]);
 	
 							$oFileInfo = parent::getFileInfo($sUserPublicId, $sType, $subNode, $sPublicHash, $sSubFullPath);
-							if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Root && isset($oFileInfo) && ($subNode instanceof \Afterlogic\DAV\FS\Shared\File || $subNode instanceof \Afterlogic\DAV\FS\Shared\Directory))
-							{
-								if (!empty($sSharePath)) {
-									$oFileInfo->Name = trim($sSharePath, '/') . '/' . $subNode->getName();
-								}
-							}
+							// if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Root && isset($oFileInfo) && ($subNode instanceof \Afterlogic\DAV\FS\Shared\File || $subNode instanceof \Afterlogic\DAV\FS\Shared\Directory))
+							// {
+							// 	if (!empty($sSharePath)) {
+							// 		$oFileInfo->Name = trim($sSharePath, '/') . '/' . $subNode->getName();
+							// 	}
+							// }
 	
 							// if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
 							// {
