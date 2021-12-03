@@ -125,6 +125,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$sType = $aArgs['Type'];
 			if ($sIsShared && !empty($aArgs['Path'])) {
 				$sType = FileStorageType::Personal;
+			} else {
+				
 			}
 			$sPath = 'files/' . $sType . '/' .trim($aArgs['Path'], '/') . '/' .  $aArgs['Name'];
 
