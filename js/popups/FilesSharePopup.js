@@ -11,6 +11,7 @@ var
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
+	ConfirmPopup = require('%PathToCoreWebclientModule%/js/popups/ConfirmPopup.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
 	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
@@ -131,6 +132,38 @@ CFilesSharePopup.prototype.onOpen = function (oFileItem)
 	}
 };
 
+CFilesSharePopup.prototype.getCurrentShares = function ()
+{
+	return _.map(this.shares(), function (oShare) {
+		var iAccess = oShare.access();
+		if (this.sharedWithAll()) {
+			if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && iAccess !== Enums.SharedFileAccess.Reshare) {
+				iAccess = Enums.SharedFileAccess.Write;
+			} else if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Reshare) {
+				iAccess = Enums.SharedFileAccess.Reshare;
+			}
+		}
+		return {
+			PublicId: oShare.sPublicId,
+			Access: iAccess
+		};
+	}, this);
+};
+
+CFilesSharePopup.prototype.hasChanges = function ()
+{
+	var
+		oFileItem = this.oFileItem,
+		aSavedShares = Types.pArray(oFileItem && oFileItem.oExtendedProps && oFileItem.oExtendedProps.Shares),
+		aCurrentShares = this.getCurrentShares()
+	;
+	aSavedShares = _.sortBy(aSavedShares, 'PublicId');
+	aCurrentShares = _.sortBy(aCurrentShares, 'PublicId');
+	return	oFileItem && (!_.isEqual(aSavedShares, aCurrentShares)
+			|| this.sharedWithAll() !== !!oFileItem.oExtendedProps.SharedWithAllAccess
+			|| this.sharedWithAllAccess() !== Types.pEnum(oFileItem.oExtendedProps.SharedWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
+};
+
 CFilesSharePopup.prototype.onEscHandler = function ()
 {
 	this.cancelPopup();
@@ -142,7 +175,15 @@ CFilesSharePopup.prototype.cancelPopup = function ()
 		return;
 	}
 
-	this.closePopup();
+	if (this.hasChanges()) {
+		Popups.showPopup(ConfirmPopup, [TextUtils.i18n('COREWEBCLIENT/CONFIRM_DISCARD_CHANGES'), function (bDiscard) {
+			if (bDiscard) {
+				this.closePopup();
+			}
+		}.bind(this)]);
+	} else {
+		this.closePopup();
+	}
 };
 
 CFilesSharePopup.prototype.autocompleteCallback = function (oRequest, fResponse)
@@ -189,20 +230,7 @@ CFilesSharePopup.prototype.saveShares = function ()
 	}
 
 	var
-		aShares = _.map(this.shares(), function (oShare) {
-			var iAcess = oShare.access();
-			if (this.sharedWithAll()) {
-				if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && iAcess !== Enums.SharedFileAccess.Reshare) {
-					iAcess = Enums.SharedFileAccess.Write;
-				} else if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Reshare) {
-					iAcess = Enums.SharedFileAccess.Reshare;
-				}
-			}
-			return {
-				PublicId: oShare.sPublicId,
-				Access: iAcess
-			};
-		}, this),
+		aShares = this.getCurrentShares(),
 		oParameters = {
 			'Storage': this.oFileItem.storageType(),
 			'Path': this.oFileItem.path(),
