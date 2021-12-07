@@ -7,10 +7,13 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Afterlogic\DAV\FS\Shared\Root;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
 use Aurora\Modules\Core\Module as CoreModule;
 use Aurora\System\Enums\FileStorageType;
+
+use function Sabre\Uri\split;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -117,10 +120,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($this->checkStorageType($aArgs['Type']))
 		{
 			$oServer = \Afterlogic\DAV\Server::getInstance();
+			$sUserPublicId = \Aurora\Api::getUserPublicIdById($aArgs['UserId']);
 
-			// $oServer->setUser(
-			// 	\Aurora\Api::getUserPublicIdById($aArgs['UserId'])
-			// );
 			$sIsShared = isset($aArgs['Shared']) ? !! $aArgs['Shared'] : false;
 			$sType = $aArgs['Type'];
 			if ($sIsShared && !empty($aArgs['Path'])) {
@@ -130,7 +131,30 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 			$sPath = 'files/' . $sType . '/' .trim($aArgs['Path'], '/') . '/' .  $aArgs['Name'];
 
-			$oNode = $oServer->tree->getNodeForPath($sPath);
+			$oPdo = new \Afterlogic\DAV\FS\Backend\PDO();
+
+			$aPath = [];
+			$aSharedFiles = $oPdo->getSharedFilesForUser('principals/' . $sUserPublicId);
+			foreach ($aSharedFiles as $key => $aSharedFile) {
+				if ($aSharedFile['isdir']) {
+					$aPath[$key] = 'files/shared' . $aSharedFile['share_path'] . '/' . $aSharedFile['uid'];
+				}
+			}
+			$oNode = null;
+			foreach($aPath as $key => $val) {
+				if(strpos($sPath, $val) !== false) {
+					$oNode = Root::populateItem($aSharedFiles[$key]);
+					if ($oNode) {
+						$sSubPath = str_replace($val, '', $sPath);
+						$aPathItems = explode('/', trim($sSubPath, '/'));
+						list(, $sUser) = split($aSharedFiles[$key]['owner']);$oServer->setUser($sUser);
+						foreach ($aPathItems as $sPathItem) {
+							$oNode = $oNode->getChild($sPathItem);
+						}
+					}
+				}
+			}
+
 			if ($oNode instanceof \Afterlogic\DAV\FS\File)
 			{
 				$sExt = \pathinfo($aArgs['Name'], PATHINFO_EXTENSION);

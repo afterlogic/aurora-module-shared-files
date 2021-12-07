@@ -64,53 +64,102 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 	public function getFiles($sUserPublicId, $sType = \Aurora\System\Enums\FileStorageType::Personal, $sPath = '', $sPattern = '', $sPublicHash = null, $bIsShared = false)
 	{
 		$aResult = [];
+		$aItems = [];
 		$oNode = false;
 		
 		$oServer = \Afterlogic\DAV\Server::getInstance();
 		$oServer->setUser($sUserPublicId);
 
-		if ($bIsShared)
-		{
+		if (empty($sPath)) {
+			$bIsShared = true;
+		}
+
+		if ($bIsShared) {
 			list($share_path, $name) = split($sPath);
 			if (!empty($share_path)) {
-				$share_path = '/' . $share_path;
+				$share_path = '/' . ltrim($share_path, '/');
 			}
 			$oPdo = new \Afterlogic\DAV\FS\Backend\PDO();
-			$aSharedFile = $oPdo->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $name, $share_path);
 
-			$oNode = Root::populateItem($aSharedFile);
-			if ($oNode !== null && $oNode instanceof \Afterlogic\DAV\FS\Directory)
-			{
-				try
-				{
-					$aItems = $oNode->getChildren();
-				}
-				catch (\Exception $oEx)
-				{
-					\Aurora\Api::LogException($oEx);
-				}
-			}
-
-			foreach ($aItems as $oItem)
-			{
-				$aResult[] = $this->getFileInfo($sUserPublicId, FileStorageType::Shared, $oItem, $sPublicHash, $sPath);
-			}
-		}
-		else
-		{
+			$aSharedFiles = [];
 			if (empty($sPath)) {
-				$sPath = 'files/' . FileStorageType::Shared;
+				$aSharedFiles = $oPdo->getSharedFilesForUser('principals/' . $sUserPublicId);
+				foreach ($aSharedFiles as $aSharedFile) {
+					$aItems[] = Root::populateItem($aSharedFile);
+				}
+			} else {
+				$aSharedFile = $oPdo->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $name, $share_path);
+				$oNode = Root::populateItem($aSharedFile);
+				if ($oNode !== null && $oNode instanceof \Afterlogic\DAV\FS\Directory) {
+					try {
+						$aItems = $oNode->getChildren();
+					}
+					catch (\Exception $oEx) {
+						\Aurora\Api::LogException($oEx);
+					}
+				}
 			}
-			else {
-				$sPath = 'files/' . FileStorageType::Personal . '/'. trim($sPath, '/');
+
+			foreach ($aItems as $oItem) {
+				if ($oItem instanceof \Afterlogic\DAV\FS\Directory) {
+					if (!empty($sPattern)) {
+						$oServer->enablePropfindDepthInfinity = true;
+						$sPath = empty(trim($sPath, '/')) ? '/' : '/'. trim($sPath, '/') . '/';
+						$sSharePath = $oItem->getSharePath();
+						if (!empty($sSharePath)) {
+							$sPath = $sSharePath . $sPath;
+						}
+						$sPath = 'files/' . FileStorageType::Personal . $sPath . $oItem->getName();
+						$oIterator = $oServer->getPropertiesIteratorForPath($sPath, [
+							'{DAV:}displayname',
+							'{DAV:}getlastmodified',
+							'{DAV:}getcontentlength',
+							'{DAV:}resourcetype',
+							'{DAV:}quota-used-bytes',
+							'{DAV:}quota-available-bytes',
+							'{DAV:}getetag',
+							'{DAV:}getcontenttype',
+							'{DAV:}share-path',
+						], -1);
+						foreach ($oIterator as $iKey => $oItem) {
+							// Skipping the parent path
+							if ($iKey === 0) continue;
+			
+							$sHref = $oItem['href'];
+							list(, $sName) = \Sabre\Uri\split($sHref);
+	
+							if (empty($sPattern) || (fnmatch("*" . $sPattern . "*", $sName, FNM_CASEFOLD))) {
+								$subNode = $oServer->tree->getNodeForPath($sHref);
+								$sSharePath = isset($oItem[200]['{DAV:}share-path']) ? $oItem[200]['{DAV:}share-path'] : '';
+								if (!empty($sSharePath)) {
+									$sHref = str_replace($subNode->getName(), trim($sSharePath, '/') . '/' . $subNode->getName(), $sHref);
+								}
+			
+								if ($subNode && !isset($aResult[$sHref])) {
+									$aHref = \explode('/', $sHref, 3);
+									list($sSubFullPath, ) = \Sabre\Uri\split($aHref[2]);
+			
+									$oFileInfo = $this->getFileInfo($sUserPublicId, $sType, $subNode, $sPublicHash, $sSubFullPath);
+									$aResult[$sHref] = $oFileInfo;
+								}
+							}
+						}
+					}
+				}
 			}
+
+			foreach ($aItems as $oItem) {
+				if (empty($sPattern) || (fnmatch("*" . $sPattern . "*", $oItem->getName(), FNM_CASEFOLD))) {
+					$aResult[] = $this->getFileInfo($sUserPublicId, $sType, $oItem, $sPublicHash, $sPath);
+				}
+			}
+		} else {
+			$sPath = 'files/' . FileStorageType::Personal . '/'. trim($sPath, '/');
 
 			$oNode = $oServer->tree->getNodeForPath($sPath);
-			if ($oNode instanceof \Sabre\DAV\ICollection) 
-			{
+			if ($oNode instanceof \Sabre\DAV\ICollection) {
 				$depth = 1;
-				if (!empty($sPattern))
-				{
+				if (!empty($sPattern)) {
 					$oServer->enablePropfindDepthInfinity = true;
 					$depth = -1;
 				}
@@ -127,43 +176,25 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 					'{DAV:}share-path',
 				], $depth);
 	
-				foreach ($oIterator as $iKey => $oItem)
-				{
+				foreach ($oIterator as $iKey => $oItem) {
 					// Skipping the parent path
 					if ($iKey === 0) continue;
 	
 					$sHref = $oItem['href'];
 					list(, $sName) = \Sabre\Uri\split($sHref);
 	
-					if (empty($sPattern) || (fnmatch("*" . $sPattern . "*", $sName, FNM_CASEFOLD)))
-					{
+					if (empty($sPattern) || (fnmatch("*" . $sPattern . "*", $sName, FNM_CASEFOLD))) {
 						$subNode = $oServer->tree->getNodeForPath($sHref);
 						$sSharePath = isset($oItem[200]['{DAV:}share-path']) ? $oItem[200]['{DAV:}share-path'] : '';
 						if (!empty($sSharePath)) {
 							$sHref = str_replace($subNode->getName(), trim($sSharePath, '/') . '/' . $subNode->getName(), $sHref);
 						}
 	
-						if ($subNode && !isset($aResult[$sHref]))
-						{
+						if ($subNode && !isset($aResult[$sHref])) {
 							$aHref = \explode('/', $sHref, 3);
 							list($sSubFullPath, ) = \Sabre\Uri\split($aHref[2]);
 	
-							$oFileInfo = parent::getFileInfo($sUserPublicId, $sType, $subNode, $sPublicHash, $sSubFullPath);
-							// if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Root && isset($oFileInfo) && ($subNode instanceof \Afterlogic\DAV\FS\Shared\File || $subNode instanceof \Afterlogic\DAV\FS\Shared\Directory))
-							// {
-							// 	if (!empty($sSharePath)) {
-							// 		$oFileInfo->Name = trim($sSharePath, '/') . '/' . $subNode->getName();
-							// 	}
-							// }
-	
-							// if (isset($oFileInfo) /*&& ($oItem instanceof \Afterlogic\DAV\FS\Shared\File ||$oItem instanceof \Afterlogic\DAV\FS\Shared\Directory)*/)
-							// {
-							// 	$aExtendedProps = $oFileInfo->ExtendedProps;
-							// 	$aExtendedProps['SharedWithMeAccess'] = (int) $oNode->getAccess();
-							// 	$oFileInfo->ExtendedProps = $aExtendedProps;
-							// }
-	
-	//						$oFileInfo->Name = \basename($subNode->getPath());
+							$oFileInfo = $this->getFileInfo($sUserPublicId, $sType, $subNode, $sPublicHash, $sSubFullPath);
 	
 							$aResult[$sHref] = $oFileInfo;
 						}
@@ -183,4 +214,3 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 		return $aResult;
 	}
 }
-
