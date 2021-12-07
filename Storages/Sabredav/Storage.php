@@ -104,13 +104,13 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 				if ($oItem instanceof \Afterlogic\DAV\FS\Directory) {
 					if (!empty($sPattern)) {
 						$oServer->enablePropfindDepthInfinity = true;
-						$sPath = empty(trim($sPath, '/')) ? '/' : '/'. trim($sPath, '/') . '/';
+						$sItemPath = empty(trim($sPath, '/')) ? '/' : '/'. trim($sPath, '/') . '/';
 						$sSharePath = $oItem->getSharePath();
 						if (!empty($sSharePath)) {
-							$sPath = $sSharePath . $sPath;
+							$sItemPath = $sSharePath . $sItemPath;
 						}
-						$sPath = 'files/' . FileStorageType::Personal . $sPath . $oItem->getName();
-						$oIterator = $oServer->getPropertiesIteratorForPath($sPath, [
+						$sItemPath = 'files/' . FileStorageType::Personal . $sItemPath . $oItem->getName();
+						$oIterator = $oServer->getPropertiesIteratorForPath($sItemPath, [
 							'{DAV:}displayname',
 							'{DAV:}getlastmodified',
 							'{DAV:}getcontentlength',
