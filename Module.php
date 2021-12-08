@@ -124,11 +124,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$sIsShared = isset($aArgs['Shared']) ? !! $aArgs['Shared'] : false;
 			$sType = $aArgs['Type'];
-			if ($sIsShared && !empty($aArgs['Path'])) {
-				$sType = FileStorageType::Personal;
-			} else {
+			// if ($sIsShared && !empty($aArgs['Path'])) {
+			// 	$sType = FileStorageType::Personal;
+			// } else {
 				
-			}
+			// }
 			$sPath = 'files/' . $sType . '/' .trim($aArgs['Path'], '/') . '/' .  $aArgs['Name'];
 
 			$oPdo = new \Afterlogic\DAV\FS\Backend\PDO();

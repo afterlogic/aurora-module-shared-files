@@ -74,7 +74,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 			$bIsShared = true;
 		}
 
-		if ($bIsShared) {
+		if (empty($sPath)/*$bIsShared*/) {
 			list($share_path, $name) = split($sPath);
 			if (!empty($share_path)) {
 				$share_path = '/' . ltrim($share_path, '/');
@@ -144,6 +144,7 @@ class Storage extends \Aurora\Modules\PersonalFiles\Storages\Sabredav\Storage
 								}
 							}
 						}
+						$oServer->enablePropfindDepthInfinity = false;
 					}
 				}
 			}
