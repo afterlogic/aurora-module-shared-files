@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Afterlogic\DAV\FS\Directory;
+use Afterlogic\DAV\FS\File;
 use Afterlogic\DAV\FS\Shared\Root;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
@@ -87,7 +89,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($mResult as $oItem)
 			{
 				$oExtendedProps = $oItem->ExtendedProps;
-				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id);
+				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] : false;
+				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id, $bSharedWithMe);
 				$oItem->ExtendedProps = $oExtendedProps;
 			}
 		}
@@ -109,147 +112,25 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
         return $sAction ===  'download';
 	}
 
-	/**
-	 * Puts file content to $mResult.
-	 * @ignore
-	 * @param array $aArgs Arguments of event.
-	 * @param mixed $mResult Is passed by reference.
-	 */
-	public function onGetFile($aArgs, &$mResult)
-	{
-		if ($this->checkStorageType($aArgs['Type']))
-		{
-			$oServer = \Afterlogic\DAV\Server::getInstance();
-			$sUserPublicId = \Aurora\Api::getUserPublicIdById($aArgs['UserId']);
-
-			$sIsShared = isset($aArgs['Shared']) ? !! $aArgs['Shared'] : false;
-			$sType = $aArgs['Type'];
-			// if ($sIsShared && !empty($aArgs['Path'])) {
-			// 	$sType = FileStorageType::Personal;
-			// } else {
-				
-			// }
-			$sPath = 'files/' . $sType . '/' .trim($aArgs['Path'], '/') . '/' .  $aArgs['Name'];
-
-			$oPdo = new \Afterlogic\DAV\FS\Backend\PDO();
-
-			$aPath = [];
-			$aSharedFiles = $oPdo->getSharedFilesForUser('principals/' . $sUserPublicId);
-			foreach ($aSharedFiles as $key => $aSharedFile) {
-				if ($aSharedFile['isdir']) {
-					$aPath[$key] = 'files/shared' . $aSharedFile['share_path'] . '/' . $aSharedFile['uid'];
-				}
-			}
-			$oNode = null;
-			foreach($aPath as $key => $val) {
-				if(strpos($sPath, $val) !== false) {
-					$oNode = Root::populateItem($aSharedFiles[$key]);
-					if ($oNode) {
-						$sSubPath = str_replace($val, '', $sPath);
-						$aPathItems = explode('/', trim($sSubPath, '/'));
-						list(, $sUser) = split($aSharedFiles[$key]['owner']);$oServer->setUser($sUser);
-						foreach ($aPathItems as $sPathItem) {
-							$oNode = $oNode->getChild($sPathItem);
-						}
-					}
-				}
-			}
-
-			if ($oNode instanceof \Afterlogic\DAV\FS\File)
-			{
-				$sExt = \pathinfo($aArgs['Name'], PATHINFO_EXTENSION);
-				$bNoRedirect = (isset($aArgs['NoRedirect']) && $aArgs['NoRedirect']) ? true : false;
-
-				if ($aArgs['IsThumb'] || $this->isNeedToReturnBody() || \strtolower($sExt) === 'url' || $bNoRedirect)
-				{
-					$mResult = $oNode->get(false);
-				}
-				else
-				{
-					$mResult = $oNode->get(true);
-					$sRelativePath = $oNode instanceof \Afterlogic\DAV\FS\Shared\File ? $oNode->getRelativeNodePath() : $oNode->getRelativePath();
-					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($sRelativePath, '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
-
-					$sOwnerPublicId = $oNode instanceof \Afterlogic\DAV\FS\Shared\File ? $oNode->getOwnerPublicId() : $oNode->getUser();
-					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($sOwnerPublicId);
-					if ($oUser)
-					{
-						$aArgs = [
-							'UserId' => $oUser->Id,
-							'ResourceType' => 'file',
-							'ResourceId' => $sResourceId,
-							'Action' => 'get-share'
-						];
-						$this->broadcastEvent('AddToActivityHistory', $aArgs);
-					}
-				}
-			}
-			else
-			{
-				$mResult = false;
-//				echo(\Aurora\System\Managers\Response::GetJsonFromObject('Json', \Aurora\System\Managers\Response::FalseResponse(__METHOD__, 404, 'Not Found')));
-				$this->oHttp->StatusHeader(404);
-				exit;
-			}
-
-			return true;
-		}
-	}
-
-	// public function onAfterMove(&$aArgs, &$mResult)
-	// {
-	// 	$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
-	// 	foreach ($aArgs['Files'] as $aFile)
-	// 	{
-	// 		$oNode = Server::getNodeForPath('files/' . $aFile['FromType'] . '/' . $aFile['FromPath'] . '/' . $aFile['Name']);
-	// 		if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
-	// 			if ($aArgs['ToType'] === FileStorageType::Personal) {
-	// 				$mResult = $this->oBackend->updateSharedFileSharePath('principals/' . $sUserPublicId, $aFile['Name'], $aFile['FromPath'], $aArgs['ToPath']);
-	// 			} else {
-	// 				parent::onAfterMove($aArgs, $mResult);
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	public function onAfterDelete(&$aArgs, &$mResult)
-	{
-		$iUserId = $aArgs['UserId'];
-		$sStorage = $aArgs['Type'];
-		$aItems = $aArgs['Items'];
-		$sPath = $aArgs['Path'];
-
-		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
-		$oServer = \Afterlogic\DAV\Server::getInstance();
-
-		foreach ($aItems as $aItem)
-		{
-			$sPath = 'files/' . $aArgs['Type'] . $aItem['Path'] . '/' . $aItem['Name'];
-
-			$oNode = $oServer->tree->getNodeForPath($sPath);
-			if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
-			{
-				$mResult = $oNode->delete();
-			}
-
-//			$this->oBackend->deleteSharedFile('principals/' . $sUserPublicId, $sStorage, $aItem['Path'] . '/' . $aItem['Name']);
-			$this->oBackend->deleteShare('principals/' . $sUserPublicId, $aItem['Path'] . '/' . $aItem['Name']);
-		}
-	}
-
-	public function GetShares($UserId, $Storage, $Path)
+	public function GetShares($UserId, $Storage, $Path, $SharedWithMe = false)
 	{
 		$aResult = [];
 
 		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
 
 		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
+		if (!$aShares && $SharedWithMe) {
+			list($sPath, $sName) = split($Path);
+			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $sName, $sPath);
+			if ($aSharedFile) {
+				$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
+			}
+		}
 		foreach ($aShares as $aShare)
 		{
 			$aResult[] = [
 				'PublicId' => basename($aShare['principaluri']),
 				'Access' => $aShare['access']
-				// 'Access' => \Aurora\Modules\SharedFiles\Enums\Access::Read
 			];
 		}
 
@@ -410,48 +291,48 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		return $mResult;
 	}
 
-	/**
-	 *
-	 */
-	public function onAfterGetFiles(&$aArgs, &$mResult)
-	{
-		if ($mResult)
-		{
-			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
-			$oServer = \Afterlogic\DAV\Server::getInstance();
+// 	/**
+// 	 *
+// 	 */
+// 	public function onAfterGetFiles(&$aArgs, &$mResult)
+// 	{
+// 		if ($mResult)
+// 		{
+// 			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
+// 			$oServer = \Afterlogic\DAV\Server::getInstance();
 
-			if (true /*isset($aArgs['Shared']) && !!$aArgs['Shared'] === true*/)
-			{
-//				$aShare = $this->oBackend->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $aArgs['Path'], $aArgs['Id']);
-			}
+// 			if (true /*isset($aArgs['Shared']) && !!$aArgs['Shared'] === true*/)
+// 			{
+// //				$aShare = $this->oBackend->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $aArgs['Path'], $aArgs['Id']);
+// 			}
 
-			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
-			try
-			{
-				$oNode = $oServer->tree->getNodeForPath($sPath);
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
-				{
-					$mResult['Access'] = $oNode->getAccess();
-				}
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
-				{
-					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativeNodePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
-					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
-					if ($oUser)
-					{
-						$aArgs = [
-							'UserId' => $oUser->Id,
-							'ResourceType' => 'file',
-							'ResourceId' => $sResourceId,
-							'Action' => 'list-share'
-						];
-						$this->broadcastEvent('AddToActivityHistory', $aArgs);
-					}
-				}
-			}
-			catch (\Exception $oEx) {}
-		}
-	}
+// 			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
+// 			try
+// 			{
+// 				$oNode = $oServer->tree->getNodeForPath($sPath);
+// 				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+// 				{
+// 					$mResult['Access'] = $oNode->getAccess();
+// 				}
+// 				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
+// 				{
+// 					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativeNodePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
+// 					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
+// 					if ($oUser)
+// 					{
+// 						$aArgs = [
+// 							'UserId' => $oUser->Id,
+// 							'ResourceType' => 'file',
+// 							'ResourceId' => $sResourceId,
+// 							'Action' => 'list-share'
+// 						];
+// 						$this->broadcastEvent('AddToActivityHistory', $aArgs);
+// 					}
+// 				}
+// 			}
+// 			catch (\Exception $oEx) {}
+// 		}
+// 	}
 
 	/**
 	 * @ignore
