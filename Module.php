@@ -9,6 +9,7 @@ namespace Aurora\Modules\SharedFiles;
 
 use Afterlogic\DAV\FS\Directory;
 use Afterlogic\DAV\FS\File;
+use Afterlogic\DAV\FS\Permission;
 use Afterlogic\DAV\FS\Shared\Root;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
@@ -89,7 +90,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($mResult as $oItem)
 			{
 				$oExtendedProps = $oItem->ExtendedProps;
-				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] : false;
+				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] === Permission::Reshare : false;
 				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id, $bSharedWithMe);
 				$oItem->ExtendedProps = $oExtendedProps;
 			}
