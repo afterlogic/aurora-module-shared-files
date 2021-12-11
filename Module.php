@@ -148,7 +148,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function getNonExistentFileName($principalUri, $sFileName, $sPath = '')
 	{
-		$iIndex = 0;
+		$iIndex = 1;
 		$sFileNamePathInfo = pathinfo($sFileName);
 		$sExt = '';
 		$sNameWOExt = $sFileName;
@@ -185,7 +185,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	}
 
 
-	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
+	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false, $SharedWithAllAccess = Enums\Access::NoAccess)
 	{
 		$mResult = true;
 		$aGuests = [];
@@ -260,9 +260,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($Shares as $aShare) {
 				$sPrincipalUri = 'principals/' . $aShare['PublicId'];
 				if (in_array($sPrincipalUri, $aItemsToCreate)) {
-					$Id = $this->getNonExistentFileName($sPrincipalUri, $Id);
-					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $Id, $sPrincipalUri, $aShare['Access'], $IsDir);
-				} else if(in_array($sPrincipalUri, $aItemsToUpdate)) {
+					$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
+					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
+				} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
 					$mResult = $mResult && $this->oBackend->updateSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
 				}
 				if ($mResult) {
