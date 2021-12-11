@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\SharedFiles;
 
+use Afterlogic\DAV\Constants;
 use Afterlogic\DAV\FS\Permission;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
@@ -117,10 +118,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$sUserPublicId = Api::getUserPublicIdById($UserId);
 		Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
-		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
+		$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 		if (!$aShares && $SharedWithMe) {
 			list($sPath, $sName) = split($Path);
-			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath('principals/' . $sUserPublicId, $sName, $sPath);
+			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $sName, $sPath);
 			if ($aSharedFile) {
 				$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
 			}
@@ -204,23 +205,20 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
 				$Storage = $oNode->getStorage();
 			}
-			$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($FullPath, '/'));
+			$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($FullPath, '/'));
 			
 			$aOldSharePrincipals = array_map(function ($aShareItem) {
 				return $aShareItem['principaluri'];
 			}, $aShares);
 			
 			$aNewSharePrincipals = array_map(function ($aShareItem) {
-				return 'principals/' . $aShareItem['PublicId'];
+				return Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'];
 			}, $Shares);
 
 			$aItemsToDelete = array_diff(
 				$aOldSharePrincipals,
 				$aNewSharePrincipals
 			);
-			foreach ($aItemsToDelete as $sItem) {
-				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $FullPath);
-			}
 
 			$aItemsToCreate = array_diff(
 				$aNewSharePrincipals,
@@ -231,6 +229,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$aOldSharePrincipals,
 				$aNewSharePrincipals
 			);
+
+			foreach ($aItemsToDelete as $sItem) {
+				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $FullPath);
+			}
 
 			foreach ($Shares as $Share) {
 				if (!$bIsShared && $oUser->PublicId === $Share['PublicId']) {
@@ -255,12 +257,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$aGuestPublicIds = [];
 			foreach ($Shares as $aShare) {
-				$sPrincipalUri = 'principals/' . $aShare['PublicId'];
+				$sPrincipalUri = Constants::PRINCIPALS_PREFIX . $aShare['PublicId'];
 				if (in_array($sPrincipalUri, $aItemsToCreate)) {
 					$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
-					$mResult = $mResult && $this->oBackend->createSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
+					$mResult = $mResult && $this->oBackend->createSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
 				} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
-					$mResult = $mResult && $this->oBackend->updateSharedFile('principals/' . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
+					$mResult = $mResult && $this->oBackend->updateSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
 				}
 				if ($mResult) {
 					$sAccess = (int) $aShare['Access'] === Enums\Access::Read ? '(r)' : '(w)';
@@ -319,7 +321,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterDeleteUser($aArgs, $mResult)
 	{
 		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Models\User) {
-			$this->oBackend->deleteSharesByPrincipal('principals/' . $this->oBeforeDeleteUser->PublicId);
+			$this->oBackend->deleteSharesByPrincipal(Constants::PRINCIPALS_PREFIX . $this->oBeforeDeleteUser->PublicId);
 		}
 	}
 
