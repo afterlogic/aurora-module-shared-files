@@ -7,14 +7,13 @@
 
 namespace Aurora\Modules\SharedFiles;
 
-use Afterlogic\DAV\FS\Directory;
-use Afterlogic\DAV\FS\File;
 use Afterlogic\DAV\FS\Permission;
-use Afterlogic\DAV\FS\Shared\Root;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
 use Aurora\Modules\Core\Module as CoreModule;
+use Aurora\Modules\Files\Module as FilesModule;
 use Aurora\System\Enums\FileStorageType;
+use Aurora\System\Exceptions\ApiException;
 
 use function Sabre\Uri\split;
 
@@ -40,12 +39,13 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 	/**
 	 * Indicates if it's allowed to move files/folders to this storage.
-	 * @var type bool
+	 * @var bool
 	 */
 	protected static $bIsDroppable = false;
 
 	/**
 	 *
+	 * @var \Afterlogic\DAV\FS\Backend\PDO
 	 */
 	protected $oBackend;
 
@@ -85,10 +85,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetItems($aArgs, &$mResult)
 	{
-		if (is_array($mResult))
-		{
-			foreach ($mResult as $oItem)
-			{
+		if (is_array($mResult)) {
+			foreach ($mResult as $oItem) {
 				$oExtendedProps = $oItem->ExtendedProps;
 				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] === Permission::Reshare : false;
 				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id, $bSharedWithMe);
@@ -117,7 +115,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		$aResult = [];
 
-		$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
+		$sUserPublicId = Api::getUserPublicIdById($UserId);
 		Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
 		$aShares = $this->oBackend->getShares('principals/' . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 		if (!$aShares && $SharedWithMe) {
@@ -127,8 +125,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
 			}
 		}
-		foreach ($aShares as $aShare)
-		{
+		foreach ($aShares as $aShare) {
 			$aResult[] = [
 				'PublicId' => basename($aShare['principaluri']),
 				'Access' => $aShare['access']
@@ -172,7 +169,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		if ($oUser) {
 			$sPrevState = Api::skipCheckUserRole(true);
-			$sFileName = \Aurora\Modules\Files\Module::Decorator()->GetNonExistentFileName(
+			$sFileName = FilesModule::Decorator()->GetNonExistentFileName(
 				$oUser->Id,
 				FileStorageType::Personal,
 				$sPath,
@@ -193,10 +190,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$aReshare = [];
 		$aUpdateShares = [];
 
-		$oUser = \Aurora\System\Api::getAuthenticatedUser();
+		$oUser = Api::getAuthenticatedUser();
 		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
 		{
-			$sUserPublicId = \Aurora\System\Api::getUserPublicIdById($UserId);
+			$sUserPublicId = Api::getUserPublicIdById($UserId);
 			$FullPath =  $Path . '/' . $Id;
 			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
 			$oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
@@ -237,10 +234,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			foreach ($Shares as $Share) {
 				if (!$bIsShared && $oUser->PublicId === $Share['PublicId']) {
-					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
+					throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
 				}
-				if (!\Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($Share['PublicId'])) {
-					throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::UserNotExists);
+				if (!CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
+					throw new ApiException(Enums\ErrorCodes::UserNotExists);
 				}
 				if ($Share['Access'] === Enums\Access::Read) {
 					$aGuests[] = $Share['PublicId'];
@@ -253,7 +250,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 			$aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
 			if (!empty($aDuplicatedUsers)) {
-				throw new \Aurora\System\Exceptions\ApiException(Enums\ErrorCodes::DuplicatedUsers);
+				throw new ApiException(Enums\ErrorCodes::DuplicatedUsers);
 			}
 
 			$aGuestPublicIds = [];
@@ -290,22 +287,16 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterGetFiles(&$aArgs, &$mResult)
 	{
-		if ($mResult)
-		{
-			$sPath = 'files/' . $aArgs['Type'] . $aArgs['Path'];
-			try
-			{
-				$oNode = Server::getNodeForPath($sPath);
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
-				{
+		if ($mResult) {
+			try {
+				$oNode = Server::getNodeForPath('files/' . $aArgs['Type'] . $aArgs['Path']);
+				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
 					$mResult['Access'] = $oNode->getAccess();
 				}
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory)
-				{
+				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
 					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativeNodePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
-					$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
-					if ($oUser)
-					{
+					$oUser = CoreModule::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
+					if ($oUser) {
 						$aArgs = [
 							'UserId' => $oUser->Id,
 							'ResourceType' => 'file',
@@ -327,8 +318,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterDeleteUser($aArgs, $mResult)
 	{
-		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Models\User)
-		{
+		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Models\User) {
 			$this->oBackend->deleteSharesByPrincipal('principals/' . $this->oBeforeDeleteUser->PublicId);
 		}
 	}
