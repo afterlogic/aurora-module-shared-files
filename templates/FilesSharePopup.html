@@ -11,6 +11,52 @@
 					<span class="hint" data-bind="text: hintText"></span>
 				</div>
 				<!-- /ko -->
+				<div class="row row_new_share">
+					<input class="input" spellcheck="false" type="text" autocomplete="on"
+						data-bind="valueUpdate: ['blur', 'afterkeydown'], initDom: selectedTeammateDom,
+						i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS', 'type': 'placeholder'},
+						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
+					<div class="new_share_access_select" data-bind="dropdown: {}">
+							<span class="dropdown">
+								<span class="dropdown_helper">
+									<span class="dropdown_arrow"><span></span></span>
+									<span class="dropdown_content" data-bind="foreach: aAccessList">
+										<span class="item" data-bind="text: label,
+											  click: function () { $parent.addNewShare(value); }"></span>
+									</span>
+								</span>
+							</span>
+						<span class="control">+</span>
+					</div>
+				</div>
+				<div class="row">
+					<div class="shares_list">
+						<div class="item">
+							<span class="title">
+								<label class="custom_checkbox checked" data-bind="css: {'checked': sharedWithAll}">
+									<span class="icon"></span>
+									<input type="checkbox" id="sharedWithAll" data-bind="checked: sharedWithAll">
+								</label>
+								<label for="sharedWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
+							</span>
+							<span class="del"></span>
+							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll">
+								<span class="link control" data-bind="text: sharedWithAllAccessText"></span>
+								<span class="dropdown">
+									<span class="dropdown_helper">
+										<span class="dropdown_arrow"><span></span></span>
+										<span class="dropdown_content" data-bind="foreach: aAccessList">
+											<span class="item" data-bind="
+												  text: label,
+												  css: {'selected': value === $parent.sharedWithAllAccess()},
+												  click: function () { $parent.setSharedWithAllAccess(value); }"></span>
+										</span>
+									</span>
+								</span>
+							</span>
+						</div>
+					</div>
+				</div>
 				<div class="row row_shares_list" data-bind="customScrollbar: {x: false}">
 					<div class="scroll-inner" data-bind="initDom: sharesScrollAreaDom">
 						<!-- ko if: shares().length === 0 -->
@@ -39,42 +85,6 @@
 							</div>
 						</div>
 						<!-- /ko -->
-					</div>
-				</div>
-				<div class="row row_new_share">
-					<input class="input" spellcheck="false" type="text" autocomplete="on"
-						data-bind="valueUpdate: ['blur', 'afterkeydown'], initDom: selectedTeammateDom,
-						i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS', 'type': 'placeholder'},
-						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
-				</div>
-				<div class="row">
-					<div class="shares_list">
-						<div class="item">
-							<span class="title">
-								<label class="custom_checkbox checked" data-bind="css: {'checked': sharedWithAll}">
-									<span class="icon"></span>
-									<input type="checkbox" id="sharedWithAll" data-bind="checked: sharedWithAll">
-								</label>
-								<label for="sharedWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
-							</span>
-							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll" style="float: none; width: auto; margin-left: 6px;">
-								<span class="link control" data-bind="text: sharedWithAllAccessText"></span>
-								<span class="dropdown">
-									<span class="dropdown_helper">
-										<span class="dropdown_arrow"><span></span></span>
-										<span class="dropdown_content" data-bind="foreach: aAccessList">
-											<span class="item" data-bind="
-												  text: label,
-												  css: {'selected': value === $parent.sharedWithAllAccess()},
-												  click: function () { $parent.setSharedWithAllAccess(value); }"></span>
-										</span>
-									</span>
-								</span>
-							</span>
-							<!-- ko if: permissionsWarningText -->
-							<span data-bind="text: permissionsWarningText" style="margin-left: 6px; width: 50%; display: inline-block; vertical-align: top;"></span>
-							<!-- /ko -->
-						</div>
 					</div>
 				</div>
 			</div>
