@@ -29,7 +29,7 @@
 						<span class="control">+</span>
 					</div>
 				</div>
-				<div class="row">
+				<!--<div class="row row_share_with_all">
 					<div class="shares_list">
 						<div class="item">
 							<span class="title">
@@ -39,7 +39,6 @@
 								</label>
 								<label for="sharedWithAll" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SHARE_WITH_ALL'}"></label>
 							</span>
-							<span class="del"></span>
 							<span class="access_select" data-bind="dropdown: {}, visible: sharedWithAll">
 								<span class="link control" data-bind="text: sharedWithAllAccessText"></span>
 								<span class="dropdown">
@@ -56,14 +55,14 @@
 							</span>
 						</div>
 					</div>
-				</div>
+				</div>-->
 				<div class="row row_shares_list" data-bind="customScrollbar: {x: false}">
 					<div class="scroll-inner" data-bind="initDom: sharesScrollAreaDom">
 						<!-- ko if: shares().length === 0 -->
 						<span class="hint" data-bind="i18n: {'key': '%MODULENAME%/INFO_NO_SHARES'}"></span>
 						<!-- /ko -->
 						<!-- ko if: shares().length > 0 -->
-						<div class="shares_list" data-bind="foreach: shares">
+						<div class="shares_list shares_list_bordered" data-bind="foreach: shares">
 							<div class="item item_share">
 								<span class="title" data-bind="text: sPublicId"></span>
 								<span class="del" data-bind="click: function () { $parent.deleteShare(sPublicId); }"></span>
