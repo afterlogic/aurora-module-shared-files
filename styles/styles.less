@@ -70,10 +70,21 @@
 
 			.control {
 				border: solid 1px #d3d3d3;
-				border-radius: 12px;
+				border-radius: 100px;
 				color: #d0d0d0;
-				font-size: 14pt;
-				padding: 1px 6px;
+				padding: 5px;
+				display: inline-block;
+    
+				&:before {
+				    content: "\e90c";
+				    font-family: 'afterlogic';
+				    font-size: 18px;
+			    	    display: inline-block;
+			    	    width: 18px;
+			    	    height: 18px;
+			    	    color: inherit;
+			    	    vertical-align: middle;
+				}
 			}
 			
 			.dropdown_helper {
