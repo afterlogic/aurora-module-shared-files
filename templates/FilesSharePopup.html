@@ -12,11 +12,11 @@
 				</div>
 				<!-- /ko -->
 				<div class="row row_new_share">
-					<input class="input" spellcheck="false" type="text" autocomplete="on"
+					<input class="input" spellcheck="false" type="text" autocomplete="off"
 						data-bind="valueUpdate: ['blur', 'afterkeydown'], initDom: selectedTeammateDom,
 						i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS', 'type': 'placeholder'},
 						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
-					<div class="new_share_access_select" data-bind="dropdown: {}">
+					<div class="new_share_access_select" data-bind="click: selectAccess, initDom: selectAccessDom">
 							<span class="dropdown">
 								<span class="dropdown_helper">
 									<span class="dropdown_arrow"><span></span></span>

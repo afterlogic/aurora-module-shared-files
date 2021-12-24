@@ -8,6 +8,7 @@ var
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
 
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
+	AlertPopup = require('%PathToCoreWebclientModule%/js/popups/AlertPopup.js'),
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
@@ -38,10 +39,22 @@ function CFilesSharePopup()
 
 	this.shares = ko.observableArray([]);
 	this.sharesScrollAreaDom = ko.observable(null);
-	
+
 	this.selectedTeammateDom = ko.observable(null);
+	this.selectedTeammateDom.subscribe(function () {
+		this.selectedTeammateDom().on('click', function() {
+			if (this.selectedTeammateDom().val() !== '') {
+				if (!$(this.selectedTeammateDom().autocomplete('widget')).is(':visible')) {
+					this.selectedTeammateDom().autocomplete('search');
+				}
+			}
+		}.bind(this));
+	}, this);
 	this.selectedTeammateData = ko.observable(null);
-	
+
+	this.selectAccessDom = ko.observable(null);
+	this.lastRecievedSuggestList = [];
+
 	this.sharedWithAll = ko.observable(false);
 	this.sharedWithAllAccess = ko.observable(Enums.SharedFileAccess.Read);
 	this.sharedWithAllAccessText = ko.computed(function () {
@@ -147,6 +160,8 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 		suggestionsAutocompleteCallback = ModulesManager.run('ContactsWebclient',
 			'getSuggestionsAutocompleteCallback', ['team', App.getUserPublicId()]),
 		markRecipientsWithKeyCallback = function (recipientList) {
+			this.lastRecievedSuggestList = recipientList;
+
 			var filteredList = _.filter(recipientList, function (suggest) {
 				return !_.find(this.shares(), function (share) {
 					return share.sPublicId === suggest.email;
@@ -166,10 +181,87 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 	}
 };
 
+CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
+{
+	var hasExpandClass = this.selectAccessDom().hasClass('expand');
+	if (hasExpandClass) {
+		this.selectAccessDom().removeClass('expand');
+	} else {
+		if (this.selectedTeammateData() === null) {
+			var
+				enteredTeammate = this.selectedTeammateDom().val(),
+				enteredTeammateLower = enteredTeammate.toLowerCase()
+			;
+			if (enteredTeammate === '') {
+				var
+					alertText = TextUtils.i18n('%MODULENAME%/WARNING_SELECT_TEAMMATE'),
+					alertCallback = function () {
+						this.selectedTeammateDom().focus();
+						this.selectedTeammateDom().autocomplete('option', 'minLength', 0); //for triggering search on empty field
+						this.selectedTeammateDom().autocomplete('search');
+						this.selectedTeammateDom().autocomplete('option', 'minLength', 1);
+					}.bind(this)
+				;
+				Popups.showPopup(AlertPopup, [alertText, alertCallback]);
+			} else {
+				var teammateData = _.find(this.lastRecievedSuggestList, function (data) {
+					return (data.value.toLowerCase() === enteredTeammateLower
+							|| data.email.toLowerCase() === enteredTeammateLower
+							|| data.name.toLowerCase() === enteredTeammateLower)
+							&& !_.find(this.shares(), function (share) {
+								return share.sPublicId.toLowerCase() === data.email.toLowerCase();
+							});
+				}.bind(this));
+				if (teammateData) {
+					this.selectedTeammateData(teammateData);
+				} else {
+					teammateData = _.find(this.lastRecievedSuggestList, function (data) {
+						return data.value.toLowerCase().indexOf(enteredTeammateLower) !== -1
+								&& !_.find(this.shares(), function (share) {
+									return share.sPublicId.toLowerCase() === data.email.toLowerCase();
+								});
+					}.bind(this));
+					if (teammateData) {
+						var
+							confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_ADD_TEAMMATE', {'EMAIL': teammateData.email}),
+							confirmCallback = function (addConfirmed) {
+								if (addConfirmed) {
+									this.selectedTeammateDom().val(teammateData.email);
+									this.selectedTeammateData(teammateData);
+									this.selectAccessDom().addClass('expand');
+								} else {
+									this.selectedTeammateDom().focus();
+									this.selectedTeammateDom().autocomplete('search');
+								}
+							}.bind(this),
+							yesButtonText = TextUtils.i18n('%MODULENAME%/ACTION_YES'),
+							noButtonText = TextUtils.i18n('%MODULENAME%/ACTION_NO')
+						;
+						Popups.showPopup(ConfirmPopup, [confirmText, confirmCallback, '', yesButtonText, noButtonText]);
+					} else {
+						var
+							alertText = TextUtils.i18n('%MODULENAME%/WARNING_NO_TEAMMATE_SELECTED', {'EMAIL': enteredTeammate}),
+							alertCallback = function () {
+								this.selectedTeammateDom().focus();
+								this.selectedTeammateDom().autocomplete('search');
+							}.bind(this)
+						;
+						Popups.showPopup(AlertPopup, [alertText, alertCallback]);
+					}
+				}
+			}
+		}
+		if (this.selectedTeammateData() !== null) {
+			this.selectAccessDom().addClass('expand');
+		}
+	}
+};
+
 CFilesSharePopup.prototype.addNewShare = function (access)
 {
 	if (!this.selectedTeammateData()) {
 		this.selectedTeammateDom().focus();
+		this.selectedTeammateDom().autocomplete('search');
 		return;
 	}
 
