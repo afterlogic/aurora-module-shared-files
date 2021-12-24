@@ -3,16 +3,11 @@
 module.exports = function (oAppData) {
 	var
 		_ = require('underscore'),
-				
-		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
-		
+
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-		Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
-		
+
 		oButtonsView = null
 	;
-
-	require('modules/%ModuleName%/js/enums.js');
 
 	function getButtonView()
 	{
