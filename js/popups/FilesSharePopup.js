@@ -168,13 +168,14 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 		suggestionsAutocompleteCallback = ModulesManager.run('ContactsWebclient',
 			'getSuggestionsAutocompleteCallback', ['team', App.getUserPublicId()]),
 		markRecipientsWithKeyCallback = function (recipientList) {
-			this.lastRecievedSuggestList = recipientList;
-
 			var filteredList = _.filter(recipientList, function (suggest) {
-				return !_.find(this.shares(), function (share) {
-					return share.sPublicId === suggest.email;
-				});
+				var suggestEmailLower = suggest.email.toLowerCase();
+				return suggestEmailLower !== this.oFileItem.sOwnerName.toLowerCase()
+						&& !_.find(this.shares(), function (share) {
+							return share.sPublicId.toLowerCase() === suggestEmailLower;
+						});
 			}, this);
+			this.lastRecievedSuggestList = filteredList;
 
 			if (filteredList.length > 0) {
 				response(filteredList);
@@ -213,21 +214,15 @@ CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 				Popups.showPopup(AlertPopup, [alertText, alertCallback]);
 			} else {
 				var teammateData = _.find(this.lastRecievedSuggestList, function (data) {
-					return (data.value.toLowerCase() === enteredTeammateLower
+					return data.value.toLowerCase() === enteredTeammateLower
 							|| data.email.toLowerCase() === enteredTeammateLower
-							|| data.name.toLowerCase() === enteredTeammateLower)
-							&& !_.find(this.shares(), function (share) {
-								return share.sPublicId.toLowerCase() === data.email.toLowerCase();
-							});
+							|| data.name.toLowerCase() === enteredTeammateLower;
 				}.bind(this));
 				if (teammateData) {
 					this.selectedTeammateData(teammateData);
 				} else {
 					teammateData = _.find(this.lastRecievedSuggestList, function (data) {
-						return data.value.toLowerCase().indexOf(enteredTeammateLower) !== -1
-								&& !_.find(this.shares(), function (share) {
-									return share.sPublicId.toLowerCase() === data.email.toLowerCase();
-								});
+						return data.value.toLowerCase().indexOf(enteredTeammateLower) !== -1;
 					}.bind(this));
 					if (teammateData) {
 						var
