@@ -129,13 +129,14 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 CFilesSharePopup.prototype.hasChanges = function ()
 {
 	var
-		fileItem = this.fileItem,
+		fileItem = this.oFileItem,
 		savedShares = Types.pArray(fileItem && fileItem.oExtendedProps && fileItem.oExtendedProps.Shares),
 		currentShares = this.getCurrentShares()
 	;
 	savedShares = _.sortBy(savedShares, 'PublicId');
 	currentShares = _.sortBy(currentShares, 'PublicId');
 	return	fileItem && (!_.isEqual(savedShares, currentShares)
+			|| this.selectedTeammateEmail()
 			|| this.sharedWithAll() !== !!fileItem.oExtendedProps.SharedWithAllAccess
 			|| this.sharedWithAllAccess() !== Types.pEnum(fileItem.oExtendedProps.SharedWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
 };
