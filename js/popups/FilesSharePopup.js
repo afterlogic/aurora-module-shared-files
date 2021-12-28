@@ -43,14 +43,20 @@ function CFilesSharePopup()
 	this.selectedTeammateDom = ko.observable(null);
 	this.selectedTeammateDom.subscribe(function () {
 		this.selectedTeammateDom().on('click', function() {
-			if (this.selectedTeammateDom().val() !== '') {
+			if (this.selectedTeammateEmail() !== '') {
 				if (!$(this.selectedTeammateDom().autocomplete('widget')).is(':visible')) {
 					this.selectedTeammateDom().autocomplete('search');
 				}
 			}
 		}.bind(this));
 	}, this);
+	this.selectedTeammateEmail = ko.observable('');
 	this.selectedTeammateData = ko.observable(null);
+	this.selectedTeammateData.subscribe(function () {
+		if (this.selectedTeammateData()) {
+			this.selectedTeammateEmail(this.selectedTeammateData().value);
+		}
+	}, this);
 
 	this.selectAccessDom = ko.observable(null);
 	this.lastRecievedSuggestList = [];
@@ -82,6 +88,8 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 {
 	this.oFileItem = fileItem || null;
 	this.hintText('');
+	this.selectedTeammateEmail('');
+	this.selectedTeammateData(null);
 	if (fileItem !== null) {
 		App.broadcastEvent(
 			'%ModuleName%::OpenFilesSharePopup',
@@ -189,7 +197,7 @@ CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 	} else {
 		if (this.selectedTeammateData() === null) {
 			var
-				enteredTeammate = this.selectedTeammateDom().val(),
+				enteredTeammate = this.selectedTeammateEmail(),
 				enteredTeammateLower = enteredTeammate.toLowerCase()
 			;
 			if (enteredTeammate === '') {
@@ -226,7 +234,7 @@ CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 							confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_ADD_TEAMMATE', {'EMAIL': teammateData.email}),
 							confirmCallback = function (addConfirmed) {
 								if (addConfirmed) {
-									this.selectedTeammateDom().val(teammateData.email);
+									this.selectedTeammateEmail(teammateData.email);
 									this.selectedTeammateData(teammateData);
 									this.selectAccessDom().addClass('expand');
 								} else {
@@ -271,7 +279,7 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 	}));
 
 	this.selectedTeammateData(null);
-	this.selectedTeammateDom().val('');
+	this.selectedTeammateEmail('');
 	var
 		scrollArea = this.sharesScrollAreaDom(),
 		listArea = scrollArea !== null ? scrollArea.find('.shares_list') : null
