@@ -20,7 +20,7 @@
 						<span class="dropdown">
 							<span class="dropdown_helper">
 								<span class="dropdown_arrow"><span></span></span>
-								<span class="dropdown_content" data-bind="foreach: aAccessList">
+								<span class="dropdown_content" data-bind="foreach: accessList">
 									<span class="item" data-bind="text: label,
 										  click: function () { $parent.addNewShare(value); }"></span>
 								</span>
@@ -44,7 +44,7 @@
 								<span class="dropdown">
 									<span class="dropdown_helper">
 										<span class="dropdown_arrow"><span></span></span>
-										<span class="dropdown_content" data-bind="foreach: aAccessList">
+										<span class="dropdown_content" data-bind="foreach: accessList">
 											<span class="item" data-bind="
 												  text: label,
 												  css: {'selected': value === $parent.sharedWithAllAccess()},
@@ -71,7 +71,7 @@
 										<span class="dropdown">
 											<span class="dropdown_helper">
 												<span class="dropdown_arrow"><span></span></span>
-												<span class="dropdown_content" data-bind="foreach: $parent.aAccessList">
+												<span class="dropdown_content" data-bind="foreach: $parent.accessList">
 													<span class="item" data-bind="text: label,
 														  css: {'selected': value === $parent.access()},
 														  click: function () { $parent.access(value); }"></span>

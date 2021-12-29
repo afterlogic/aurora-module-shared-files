@@ -31,11 +31,17 @@ function CFilesSharePopup()
 
 	this.oFileItem = null;
 	this.hintText = ko.observable('');
-	this.aAccessList = [
-		{ value: Enums.SharedFileAccess.Read, label: TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS') },
-		{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS') },
-		{ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') }
-	];
+	this.allowReshare = ko.observable(false);
+	this.accessList = ko.computed(function () {
+		var list = [
+			{ value: Enums.SharedFileAccess.Read, label: TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS') },
+			{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS') }
+		];
+		if (this.allowReshare()) {
+			list.push({ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') });
+		}
+		return list;
+	}, this);
 
 	this.shares = ko.observableArray([]);
 	this.sharesScrollAreaDom = ko.observable(null);
@@ -91,6 +97,9 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 	this.selectedTeammateEmail('');
 	this.selectedTeammateData(null);
 	if (fileItem !== null) {
+		var isFileEncrypted = fileItem.oExtendedProps && fileItem.oExtendedProps.InitializationVector;
+		this.allowReshare(!isFileEncrypted);
+
 		App.broadcastEvent(
 			'%ModuleName%::OpenFilesSharePopup',
 			{
@@ -194,7 +203,6 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 {
 	var hasExpandClass = this.selectAccessDom().hasClass('expand');
-	console.log('hasExpandClass', hasExpandClass);
 	if (hasExpandClass) {
 		this.selectAccessDom().removeClass('expand');
 	} else {
@@ -203,7 +211,6 @@ CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 				enteredTeammate = this.selectedTeammateEmail(),
 				enteredTeammateLower = enteredTeammate.toLowerCase()
 			;
-			console.log('enteredTeammate', enteredTeammate);
 			if (enteredTeammate === '') {
 				var
 					alertText = TextUtils.i18n('%MODULENAME%/WARNING_SELECT_TEAMMATE'),
