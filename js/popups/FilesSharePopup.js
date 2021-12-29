@@ -194,6 +194,7 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 {
 	var hasExpandClass = this.selectAccessDom().hasClass('expand');
+	console.log('hasExpandClass', hasExpandClass);
 	if (hasExpandClass) {
 		this.selectAccessDom().removeClass('expand');
 	} else {
@@ -202,6 +203,7 @@ CFilesSharePopup.prototype.selectAccess = function (hasExpandClass, control)
 				enteredTeammate = this.selectedTeammateEmail(),
 				enteredTeammateLower = enteredTeammate.toLowerCase()
 			;
+			console.log('enteredTeammate', enteredTeammate);
 			if (enteredTeammate === '') {
 				var
 					alertText = TextUtils.i18n('%MODULENAME%/WARNING_SELECT_TEAMMATE'),
@@ -324,6 +326,30 @@ CFilesSharePopup.prototype.setSharedWithAllAccess = function (sharedWithAllAcces
 };
 
 CFilesSharePopup.prototype.saveShares = function ()
+{
+	if (this.isSaving()) {
+		return;
+	}
+
+	if (this.selectedTeammateEmail()) {
+		var
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_SAVE_SHARES_WITHOUT_LAST_EMAIL', { 'EMAIL': this.selectedTeammateEmail() }),
+			confirmCallback = function (saveConfirmed) {
+				if (saveConfirmed) {
+					this.confirmedSaveShares();
+				} else {
+					setTimeout(this.selectAccess.bind(this));
+				}
+			}.bind(this)
+		;
+		Popups.showPopup(ConfirmPopup, [confirmText, confirmCallback]);
+	} else {
+		this.confirmedSaveShares();
+	}
+
+};
+
+CFilesSharePopup.prototype.confirmedSaveShares = function ()
 {
 	if (this.isSaving()) {
 		return;
