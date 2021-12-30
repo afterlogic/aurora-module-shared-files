@@ -202,6 +202,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$FullPath =  $Path . '/' . $Id;
 			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
 			$oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
+			$bIsEncrypted = false;
+			if ($oNode) {         
+				$aExtendedProps = $oNode->getProperty('ExtendedProps');
+				$bIsEncrypted = (is_array($aExtendedProps) && isset($aExtendedProps['InitializationVector']));
+			}
 			$bIsShared = ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory);
 			if ($bIsShared) {
 				$sUserPublicId = $oNode->getOwnerPublicId();
@@ -253,6 +258,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$aReshare[] = $Share['PublicId'];
 				}
 				$aUpdateShares[] = $Share['PublicId'];
+			}
+			if ($bIsEncrypted && count($aReshare) > 0) {
+				throw new ApiException(Enums\ErrorCodes::CantReshareEncryptedFile);
 			}
 			$aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
 			if (!empty($aDuplicatedUsers)) {

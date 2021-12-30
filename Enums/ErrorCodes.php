@@ -17,7 +17,8 @@ class ErrorCodes
 	const NotPossibleToShareWithYourself	= 1000;
 	const UnknownError						= 1001;
 	const UserNotExists						= 1002;
-	const DuplicatedUsers					= 1002;
+	const DuplicatedUsers					= 1003;
+	const CantReshareEncryptedFile			= 1004;
 
 	/**
 	 * @var array
@@ -26,6 +27,7 @@ class ErrorCodes
 		'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself,
 		'UnknownError'						=> self::UnknownError,
 		'UserNotExists'						=> self::UserNotExists,
-		'DuplicatedUsers'					=> self::DuplicatedUsers
+		'DuplicatedUsers'					=> self::DuplicatedUsers,
+		'CantReshareEncryptedFile'			=> self::CantReshareEncryptedFile
 	];
 }
