@@ -29,24 +29,27 @@ CButtonsView.prototype.useFilesViewData = function (oFilesView)
 		return !oFilesView.isCorporateStorage();
 	});
 
-	this.shareCommand = Utils.createCommand(oFilesView, this.executeShare, oFilesView.isShareAllowed);
+	this.shareCommand = Utils.createCommand(this, this.executeShare.bind(this, oFilesView), oFilesView.isShareAllowed);
 
+	this.selectedSharedItems = ko.computed(function () {
+		return _.filter(oFilesView.selector.listCheckedAndSelected(), function(item) {
+			return item.bSharedWithMe;
+		});
+	}, this);
+	this.selectedSharedCount = ko.computed(function () {
+		return this.selectedSharedItems().length;
+	}, this);
 	this.isLeaveShareAllowed = ko.computed(function () {
-		var
-			aItems = oFilesView.selector.listCheckedAndSelected(),
-			oSelectedItem = aItems.length === 1 ? aItems[0] : null
-		;
-		return	!oFilesView.isZipFolder() && !oFilesView.sharedParentFolder()
-				&& oFilesView.allSelectedFilesReady()
-				&& oSelectedItem && oSelectedItem.bSharedWithMe;
-	});
-	this.leaveShareCommand = Utils.createCommand(oFilesView, this.executeLeaveShare, this.isLeaveShareAllowed);
+		return	!oFilesView.isZipFolder()
+				&& !oFilesView.sharedParentFolder() && this.selectedSharedCount() > 0
+				&& oFilesView.allSelectedFilesReady();
+	}, this);
+	this.leaveShareCommand = Utils.createCommand(this, this.executeLeaveShare.bind(this, oFilesView), this.isLeaveShareAllowed);
 };
 
-CButtonsView.prototype.executeShare = function ()
+CButtonsView.prototype.executeShare = function (oFilesView)
 {
-	// !!! this = oFilesView
-	var oSelectedItem = this.selector.itemSelected();
+	var oSelectedItem = oFilesView.selector.itemSelected();
 	if (oSelectedItem.IS_FILE && oSelectedItem.bIsSecure() && oSelectedItem.oExtendedProps && !oSelectedItem.oExtendedProps.ParanoidKey) {
 		Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/INFO_SHARING_NOT_SUPPORTED'), null, TextUtils.i18n('%MODULENAME%/TITLE_SHARE_FILE')]);
 	} else {
@@ -54,24 +57,34 @@ CButtonsView.prototype.executeShare = function ()
 	}
 };
 
-CButtonsView.prototype.executeLeaveShare = function ()
+CButtonsView.prototype.executeLeaveShare = function (oFilesView)
 {
-	// !!! this = oFilesView
 	var
-		aChecked = this.selector.listCheckedAndSelected() || [],
-		oSelectedItem = aChecked.length === 1 ? aChecked[0] : null,
-		sConfirm = ''
+		items = oFilesView.selector.listCheckedAndSelected() || [],
+		sharedItems = this.selectedSharedItems(),
+		sharedItemsCount = this.selectedSharedCount()
 	;
 	
-	if (oSelectedItem.IS_FILE) {
-		sConfirm = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FILE_SHARE');
-	} else {
-		sConfirm = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FOLDER_SHARE');
-	}
-	
-	if (!this.bPublic && oSelectedItem) {
-		this.selector.useKeyboardKeys(false);
-		Popups.showPopup(ConfirmPopup, [sConfirm, _.bind(this.deleteItems, this, aChecked), '', TextUtils.i18n('%MODULENAME%/ACTION_LEAVE_SHARE')]);
+	if (!oFilesView.bPublic || sharedItemsCount > 0) {
+		var
+			hasOwnItems = items.length !== sharedItemsCount,
+			hasFolder = !!_.find(sharedItems, function (item) { return !item.IS_FILE; }),
+			hasFile = !!_.find(sharedItems, function (item) { return item.IS_FILE; }),
+			confirmText = ''
+		;
+
+		if (hasOwnItems) {
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_NOT_ALL_ITEMS_SHARED');
+		} else if (hasFolder && hasFile) {
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_ITEMS_SHARE');
+		} else if (hasFolder) {
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FOLDERS_SHARE_PLURAL', {'COUNT': sharedItemsCount}, null, sharedItemsCount);
+		} else {
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FILES_SHARE_PLURAL', {'COUNT': sharedItemsCount}, null, sharedItemsCount);
+		}
+
+		oFilesView.selector.useKeyboardKeys(false);
+		Popups.showPopup(ConfirmPopup, [confirmText, _.bind(oFilesView.deleteItems, oFilesView, sharedItems), '', TextUtils.i18n('%MODULENAME%/ACTION_LEAVE_SHARE')]);
 	}
 };
 

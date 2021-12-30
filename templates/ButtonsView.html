@@ -4,5 +4,6 @@
 </span>
 <span class="item leave-share" data-bind="command: leaveShareCommand, customTooltip: '%MODULENAME%/ACTION_LEAVE_SHARE', visible: isShareVisible">
 	<span class="icon"></span>
+	<span class="hint" data-bind="text: selectedSharedCount, visible: isLeaveShareAllowed"></span>
 	<span class="text" data-bind="i18n: {'key': '%MODULENAME%/ACTION_LEAVE_SHARE'}"></span>
 </span>
