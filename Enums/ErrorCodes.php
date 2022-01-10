@@ -20,6 +20,7 @@ class ErrorCodes
 	const DuplicatedUsers					= 1003;
 	const CantReshareEncryptedFile			= 1004;
 	const NotPossibleToMoveSharedFileToSharedFolder = 1005;
+	const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
 
 	/**
 	 * @var array
@@ -31,5 +32,6 @@ class ErrorCodes
 		'DuplicatedUsers'					=> self::DuplicatedUsers,
 		'CantReshareEncryptedFile'			=> self::CantReshareEncryptedFile,
 		'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
+		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder
 	];
 }
