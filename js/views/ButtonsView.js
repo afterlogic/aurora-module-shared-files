@@ -26,7 +26,7 @@ CButtonsView.prototype.ViewTemplate = '%ModuleName%_ButtonsView';
 CButtonsView.prototype.useFilesViewData = function (oFilesView)
 {
 	this.isShareVisible = ko.computed(function () {
-		return !oFilesView.isCorporateStorage();
+		return !oFilesView.isCorporateStorage() && !oFilesView.sharedParentFolder();
 	});
 
 	this.shareCommand = Utils.createCommand(this, this.executeShare.bind(this, oFilesView), oFilesView.isShareAllowed);
