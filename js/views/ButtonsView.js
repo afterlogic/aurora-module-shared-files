@@ -78,13 +78,17 @@ CButtonsView.prototype.executeLeaveShare = function (oFilesView)
 		} else if (hasFolder && hasFile) {
 			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_ITEMS_SHARE');
 		} else if (hasFolder) {
-			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FOLDERS_SHARE_PLURAL', {'COUNT': sharedItemsCount}, null, sharedItemsCount);
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FOLDERS_SHARE_PLURAL', {'NAME': sharedItems[0].fileName()}, null, sharedItemsCount);
 		} else {
-			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FILES_SHARE_PLURAL', {'COUNT': sharedItemsCount}, null, sharedItemsCount);
+			confirmText = TextUtils.i18n('%MODULENAME%/CONFIRM_LEAVE_FILES_SHARE_PLURAL', {'NAME': sharedItems[0].fileName()}, null, sharedItemsCount);
 		}
 
 		oFilesView.selector.useKeyboardKeys(false);
-		Popups.showPopup(ConfirmPopup, [confirmText, _.bind(oFilesView.deleteItems, oFilesView, sharedItems), '', TextUtils.i18n('%MODULENAME%/ACTION_LEAVE_SHARE')]);
+		Popups.showPopup(ConfirmPopup, [confirmText, function (confirmedLeaveShare) {
+			if (confirmedLeaveShare) {
+				oFilesView.deleteItems(sharedItems, true, 'LeaveShare');
+			}
+		}, '', TextUtils.i18n('%MODULENAME%/ACTION_LEAVE_SHARE')]);
 	}
 };
 
