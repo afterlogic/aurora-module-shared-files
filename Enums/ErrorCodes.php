@@ -21,6 +21,7 @@ class ErrorCodes
 	const CantReshareEncryptedFile			= 1004;
 	const NotPossibleToMoveSharedFileToSharedFolder = 1005;
 	const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
+	const NotPossibleToShareDirectoryInEcryptedStorage = 1007;
 
 	/**
 	 * @var array
@@ -32,6 +33,7 @@ class ErrorCodes
 		'DuplicatedUsers'					=> self::DuplicatedUsers,
 		'CantReshareEncryptedFile'			=> self::CantReshareEncryptedFile,
 		'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
-		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder
+		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder,
+		'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage
 	];
 }

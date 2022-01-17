@@ -72,7 +72,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Enums\ErrorCodes::NotPossibleToShareWithYourself	=> $this->i18N('ERROR_NOT_POSSIBLE_TO_SHARE_WITH_YOURSELF'),
 			Enums\ErrorCodes::UnknownError				=> $this->i18N('ERROR_UNKNOWN_ERROR'),
 			Enums\ErrorCodes::UserNotExists				=> $this->i18N('ERROR_USER_NOT_EXISTS'),
-			Enums\ErrorCodes::DuplicatedUsers			=> $this->i18N('ERROR_DUPLICATE_USERS_BACKEND')
+			Enums\ErrorCodes::DuplicatedUsers			=> $this->i18N('ERROR_DUPLICATE_USERS_BACKEND'),
+			Enums\ErrorCodes::NotPossibleToShareDirectoryInEcryptedStorage => $this->i18N('CANNOT_SHARE_DIRECTORY_IN_ECRYPTED_STORAGE')
 		];
 
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
