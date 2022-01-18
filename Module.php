@@ -14,6 +14,7 @@ use Aurora\Api;
 use Aurora\Modules\Core\Module as CoreModule;
 use Aurora\Modules\Files\Module as FilesModule;
 use Aurora\System\Enums\FileStorageType;
+use Aurora\System\Enums\UserRole;
 use Aurora\System\Exceptions\ApiException;
 
 use function Sabre\Uri\split;
@@ -117,6 +118,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		$aResult = [];
 
+		Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
+
+		Api::CheckAccess($UserId);
+
 		$sUserPublicId = Api::getUserPublicIdById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
 		$oNode = Server::getNodeForPath($sFullPath);
@@ -149,7 +154,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 *
 	 * @return string
 	 */
-	public function getNonExistentFileName($principalUri, $sFileName, $sPath = '')
+	protected function getNonExistentFileName($principalUri, $sFileName, $sPath = '')
 	{
 		$iIndex = 1;
 		$sFileNamePathInfo = pathinfo($sFileName);
@@ -195,6 +200,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$aOwners = [];
 		$aReshare = [];
 		$aUpdateShares = [];
+
+		Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
+
+		Api::CheckAccess($UserId);
 
 		$oUser = Api::getAuthenticatedUser();
 		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
