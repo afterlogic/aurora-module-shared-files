@@ -130,8 +130,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		}
 		$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 		if (!$aShares && $SharedWithMe) {
-			list($sPath, $sName) = split($Path);
-			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $sName, $sPath);
+
+			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
+				Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
+				$oNode->getName(), 
+				$oNode->getSharePath()
+			);
 			if ($aSharedFile) {
 				$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
 			}
@@ -219,7 +223,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 			$bIsShared = ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory);
 			if ($bIsShared) {
-				$sUserPublicId = $oNode->getOwnerPublicId();
+				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
+					Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
+					$oNode->getName(), 
+					$oNode->getSharePath()
+				);
+				if ($aSharedFile) {
+					list(, $sUserPublicId) = split($aSharedFile['owner']);
+				}
 				$ParentNode = $oNode->getNode();
 				$FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
 				$Storage = $oNode->getStorage();
