@@ -322,7 +322,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				'ResourceType' => 'file',
 				'ResourceId' => $sResourceId,
 				'Action' => 'update-share',
-				'GuestPublicId' => \implode($aGuestPublicIds, ', ')
+				'GuestPublicId' => \implode(', ', $aGuestPublicIds)
 			];
 			$this->broadcastEvent('AddToActivityHistory', $aArgs);
 		}
