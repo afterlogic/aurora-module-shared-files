@@ -298,8 +298,21 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$mResult = $mResult && $this->oBackend->updateSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
 				}
 				if ($mResult) {
-					$sAccess = (int) $aShare['Access'] === Enums\Access::Read ? '(r)' : '(w)';
-					$aGuestPublicIds[] = $aShare['PublicId'] . $sAccess;
+					switch ((int) $aShare['Access']) {
+						case Enums\Access::Read:
+							$sAccess = '(r)';
+							break;
+						case Enums\Access::Write:
+							$sAccess = '(r/w)';
+							break;
+						case Enums\Access::Reshare:
+							$sAccess = '(r/w/s)';
+							break;
+						default:
+							$sAccess = '(r/w)';
+							break;
+					}
+					$aGuestPublicIds[] = $aShare['PublicId'] . ' - ' . $sAccess;
 				}
 			}
 			
