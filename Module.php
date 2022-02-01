@@ -125,26 +125,28 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$sUserPublicId = Api::getUserPublicIdById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
 		$oNode = Server::getNodeForPath($sFullPath);
-		if ($oNode->getAccess() === Enums\Access::Reshare) {
-			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
-		}
-		$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
-		if (!$aShares && $SharedWithMe) {
-
-			$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
-				Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
-				$oNode->getName(), 
-				$oNode->getSharePath()
-			);
-			if ($aSharedFile) {
-				$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
+		if ($oNode) {
+			if ($oNode->getAccess() === Enums\Access::Reshare) {
+				Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
 			}
-		}
-		foreach ($aShares as $aShare) {
-			$aResult[] = [
-				'PublicId' => basename($aShare['principaluri']),
-				'Access' => $aShare['access']
-			];
+			$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
+			if (!$aShares && $SharedWithMe) {
+
+				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
+					Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
+					$oNode->getName(), 
+					$oNode->getSharePath()
+				);
+				if ($aSharedFile) {
+					$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
+				}
+			}
+			foreach ($aShares as $aShare) {
+				$aResult[] = [
+					'PublicId' => basename($aShare['principaluri']),
+					'Access' => $aShare['access']
+				];
+			}
 		}
 
 		return $aResult;
