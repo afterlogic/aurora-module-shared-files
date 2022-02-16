@@ -13,6 +13,7 @@ use Afterlogic\DAV\Server;
 use Aurora\Api;
 use Aurora\Modules\Core\Module as CoreModule;
 use Aurora\Modules\Files\Module as FilesModule;
+use Aurora\Modules\SharedFiles\Enums\ErrorCodes;
 use Aurora\System\Enums\FileStorageType;
 use Aurora\System\Enums\UserRole;
 use Aurora\System\Exceptions\ApiException;
@@ -74,7 +75,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Enums\ErrorCodes::UnknownError				=> $this->i18N('ERROR_UNKNOWN_ERROR'),
 			Enums\ErrorCodes::UserNotExists				=> $this->i18N('ERROR_USER_NOT_EXISTS'),
 			Enums\ErrorCodes::DuplicatedUsers			=> $this->i18N('ERROR_DUPLICATE_USERS_BACKEND'),
-			Enums\ErrorCodes::NotPossibleToShareDirectoryInEcryptedStorage => $this->i18N('CANNOT_SHARE_DIRECTORY_IN_ECRYPTED_STORAGE')
+			Enums\ErrorCodes::NotPossibleToShareDirectoryInEcryptedStorage => $this->i18N('CANNOT_SHARE_DIRECTORY_IN_ECRYPTED_STORAGE'),
+			Enums\ErrorCodes::IncorrectFilename => $this->i18N('INCORRECT_FILE_NAME'),
 		];
 
 		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
@@ -293,12 +295,22 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$aGuestPublicIds = [];
 			foreach ($Shares as $aShare) {
 				$sPrincipalUri = Constants::PRINCIPALS_PREFIX . $aShare['PublicId'];
-				if (in_array($sPrincipalUri, $aItemsToCreate)) {
-					$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
-					$mResult = $mResult && $this->oBackend->createSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
-				} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
-					$mResult = $mResult && $this->oBackend->updateSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
+				
+				try {
+					if (in_array($sPrincipalUri, $aItemsToCreate)) {
+						$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
+						$mResult = $mResult && $this->oBackend->createSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
+					} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
+						$mResult = $mResult && $this->oBackend->updateSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
+					}
+				} catch (\PDOException $oEx) {
+					if (isset($oEx->errorInfo[1]) && $oEx->errorInfo[1] === 1366) {
+						throw new ApiException(ErrorCodes::IncorrectFilename, $oEx);
+					} else {
+						throw $oEx;
+					}
 				}
+
 				if ($mResult) {
 					switch ((int) $aShare['Access']) {
 						case Enums\Access::Read:

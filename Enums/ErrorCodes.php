@@ -22,6 +22,7 @@ class ErrorCodes
 	const NotPossibleToMoveSharedFileToSharedFolder = 1005;
 	const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
 	const NotPossibleToShareDirectoryInEcryptedStorage = 1007;
+	const IncorrectFilename = 1008;
 
 	/**
 	 * @var array
