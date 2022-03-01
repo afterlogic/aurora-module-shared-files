@@ -17,6 +17,10 @@ use Aurora\Modules\SharedFiles\Enums\ErrorCodes;
 use Aurora\System\Enums\FileStorageType;
 use Aurora\System\Enums\UserRole;
 use Aurora\System\Exceptions\ApiException;
+use Afterlogic\DAV\FS\Shared\File as SharedFile;
+use Afterlogic\DAV\FS\Shared\Directory as SharedDirectory;
+use Aurora\Modules\Core\Models\User;
+use Aurora\System\Router;
 
 use function Sabre\Uri\split;
 
@@ -79,8 +83,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Enums\ErrorCodes::IncorrectFilename => $this->i18N('INCORRECT_FILE_NAME'),
 		];
 
-		$this->subscribeEvent('Files::GetFiles::after', array($this, 'onAfterGetFiles'));
-		$this->subscribeEvent('Files::GetItems::after', array($this, 'onAfterGetItems'), 10000);
+		$this->subscribeEvent('Files::GetFiles::after', [$this, 'onAfterGetFiles']);
+		$this->subscribeEvent('Files::GetItems::after', [$this, 'onAfterGetItems'], 10000);
 	}
 
 	/**
@@ -94,7 +98,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($mResult as $oItem) {
 				$oExtendedProps = $oItem->ExtendedProps;
 				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] === Permission::Reshare : false;
-				$oExtendedProps['Shares'] = $this->GetShares($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id, $bSharedWithMe);
+				$oExtendedProps['Shares'] = $this->GetShares(
+					$aArgs['UserId'], 
+					$aArgs['Type'], 
+					\rtrim($oItem->Path, '/') . '/' . $oItem->Id, 
+					$bSharedWithMe
+				);
 				$oItem->ExtendedProps = $oExtendedProps;
 			}
 		}
@@ -104,7 +113,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		$sMethod = $this->oHttp->GetPost('Method', null);
 
-        return ((string) \Aurora\System\Router::getItemByIndex(2, '') === 'thumb' ||
+        return ((string) Router::getItemByIndex(2, '') === 'thumb' ||
 			$sMethod === 'SaveFilesAsTempFiles' ||
 			$sMethod === 'GetFilesForUpload'
 		);
@@ -112,7 +121,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 	protected function isNeedToReturnWithContectDisposition()
 	{
-		$sAction = (string) \Aurora\System\Router::getItemByIndex(2, 'download');
+		$sAction = (string) Router::getItemByIndex(2, 'download');
         return $sAction ===  'download';
 	}
 
@@ -125,6 +134,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		Api::CheckAccess($UserId);
 
 		$sUserPublicId = Api::getUserPublicIdById($UserId);
+		$oUser = Api::getUserById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
 		$oNode = Server::getNodeForPath($sFullPath);
 		if ($oNode) {
@@ -140,14 +150,33 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$oNode->getSharePath()
 				);
 				if ($aSharedFile) {
-					$aShares = $this->oBackend->getShares($aSharedFile['owner'], $aSharedFile['storage'], $aSharedFile['path']);
+					$aShares = $this->oBackend->getShares(
+						$aSharedFile['owner'], 
+						$aSharedFile['storage'], 
+						$aSharedFile['path']
+					);
 				}
 			}
+			$aGroups = [];
 			foreach ($aShares as $aShare) {
-				$aResult[] = [
-					'PublicId' => basename($aShare['principaluri']),
-					'Access' => $aShare['access']
-				];
+				if (isset($aShare['group_id']) && !in_array($aShare['group_id'], $aGroups)) {
+					$oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
+					if ($oGroup) {
+						$aGroups[] = $aShare['group_id'];
+
+						$aResult[] = [
+							'PublicId' => $oGroup->Name,
+							'Access' => $aShare['access'],
+							'IsGroup' => true,
+							'GroupId' => (int) $aShare['group_id']
+						];
+					}
+				} else {
+					$aResult[] = [
+						'PublicId' => basename($aShare['principaluri']),
+						'Access' => $aShare['access']
+					];
+				}
 			}
 		}
 
@@ -166,17 +195,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		$iIndex = 1;
 		$sFileNamePathInfo = pathinfo($sFileName);
-		$sExt = '';
-		$sNameWOExt = $sFileName;
-		if (isset($sFileNamePathInfo['extension']))
-		{
-			$sExt = '.'.$sFileNamePathInfo['extension'];
-		}
-
-		if (isset($sFileNamePathInfo['filename']))
-		{
-			$sNameWOExt = $sFileNamePathInfo['filename'];
-		}
+		$sExt = isset($sFileNamePathInfo['extension']) ? '.'.$sFileNamePathInfo['extension'] : '';
+		$sNameWOExt = isset($sFileNamePathInfo['filename']) ? $sFileNamePathInfo['filename'] : $sFileName;
 
 		while ($this->oBackend->getSharedFileByUidWithPath($principalUri, $sFileName, $sPath))
 		{
@@ -200,8 +220,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		return $sFileName;
 	}
 
-
-	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false, $SharedWithAllAccess = Enums\Access::NoAccess)
+	public function UpdateShare($UserId, $Storage, $Path, $Id, $Shares, $IsDir = false)
 	{
 		$mResult = true;
 		$aGuests = [];
@@ -210,13 +229,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$aUpdateShares = [];
 
 		Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
-
 		Api::CheckAccess($UserId);
 
 		$oUser = Api::getAuthenticatedUser();
-		if ($oUser instanceof \Aurora\Modules\Core\Models\User)
-		{
+		if ($oUser instanceof User) {
 			$sUserPublicId = Api::getUserPublicIdById($UserId);
+			$sUserPrincipalUri = Constants::PRINCIPALS_PREFIX . $sUserPublicId;
 			$FullPath =  $Path . '/' . $Id;
 			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
 			$oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
@@ -225,10 +243,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$aExtendedProps = $oNode->getProperty('ExtendedProps');
 				$bIsEncrypted = (is_array($aExtendedProps) && isset($aExtendedProps['InitializationVector']));
 			}
-			$bIsShared = ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory);
+			$bIsShared = ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory);
 			if ($bIsShared) {
 				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
-					Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
+					$sUserPrincipalUri, 
 					$oNode->getName(), 
 					$oNode->getSharePath()
 				);
@@ -239,7 +257,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
 				$Storage = $oNode->getStorage();
 			}
-			$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($FullPath, '/'));
+			$aShares = $this->oBackend->getShares(
+				$sUserPrincipalUri, 
+				$Storage, '/' . \ltrim($FullPath, '/')
+			);
 			
 			$aOldSharePrincipals = array_map(function ($aShareItem) {
 				return $aShareItem['principaluri'];
@@ -249,23 +270,16 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				return Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'];
 			}, $Shares);
 
-			$aItemsToDelete = array_diff(
-				$aOldSharePrincipals,
-				$aNewSharePrincipals
-			);
-
-			$aItemsToCreate = array_diff(
-				$aNewSharePrincipals,
-				$aOldSharePrincipals
-			);
-
-			$aItemsToUpdate = array_intersect(
-				$aOldSharePrincipals,
-				$aNewSharePrincipals
-			);
+			$aItemsToDelete = array_diff($aOldSharePrincipals, $aNewSharePrincipals);
+			$aItemsToCreate = array_diff($aNewSharePrincipals, $aOldSharePrincipals);
+			$aItemsToUpdate = array_intersect($aOldSharePrincipals, $aNewSharePrincipals);
 
 			foreach ($aItemsToDelete as $sItem) {
-				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri($sItem, $Storage, $FullPath);
+				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri(
+					$sItem, 
+					$Storage, 
+					$FullPath
+				);
 			}
 
 			foreach ($Shares as $Share) {
@@ -299,9 +313,22 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				try {
 					if (in_array($sPrincipalUri, $aItemsToCreate)) {
 						$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
-						$mResult = $mResult && $this->oBackend->createSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sNonExistentFileName, $sPrincipalUri, $aShare['Access'], $IsDir);
+						$mResult = $mResult && $this->oBackend->createSharedFile(
+							$sUserPrincipalUri, 
+							$Storage, 
+							$FullPath, 
+							$sNonExistentFileName, 
+							$sPrincipalUri, 
+							$aShare['Access'], 
+							$IsDir
+						);
 					} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
-						$mResult = $mResult && $this->oBackend->updateSharedFile(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, $FullPath, $sPrincipalUri, $aShare['Access']);
+						$mResult = $mResult && $this->oBackend->updateSharedFile(
+							$sUserPrincipalUri, $Storage, 
+							$FullPath, 
+							$sPrincipalUri, 
+							$aShare['Access']
+						);
 					}
 				} catch (\PDOException $oEx) {
 					if (isset($oEx->errorInfo[1]) && $oEx->errorInfo[1] === 1366) {
@@ -352,10 +379,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($mResult) {
 			try {
 				$oNode = Server::getNodeForPath('files/' . $aArgs['Type'] . $aArgs['Path']);
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\File || $oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
+				if ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory) {
 					$mResult['Access'] = $oNode->getAccess();
 				}
-				if ($oNode instanceof \Afterlogic\DAV\FS\Shared\Directory) {
+				if ($oNode instanceof SharedDirectory) {
 					$sResourceId = $oNode->getStorage() . '/' . \ltrim(\ltrim($oNode->getRelativeNodePath(), '/') . '/' . \ltrim($oNode->getName(), '/'), '/');
 					$oUser = CoreModule::Decorator()->GetUserByPublicId($oNode->getOwnerPublicId());
 					if ($oUser) {
@@ -380,7 +407,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 */
 	public function onAfterDeleteUser($aArgs, $mResult)
 	{
-		if ($mResult && $this->oBeforeDeleteUser instanceof \Aurora\Modules\Core\Models\User) {
+		if ($mResult && $this->oBeforeDeleteUser instanceof User) {
 			$this->oBackend->deleteSharesByPrincipal(Constants::PRINCIPALS_PREFIX . $this->oBeforeDeleteUser->PublicId);
 		}
 	}
