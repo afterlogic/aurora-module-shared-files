@@ -13,7 +13,8 @@ var
  */
 function CShareModel(oData)
 {
-	this.sPublicId = Types.pString(oData.PublicId),
+	this.publicId = Types.pString(oData.PublicId);
+	this.groupId = Types.pInt(oData.GroupId);
 
 	this.access = ko.observable(Types.pInt(oData.Access));
 	this.accessText = ko.computed(function () {

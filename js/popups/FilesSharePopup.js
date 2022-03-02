@@ -59,6 +59,7 @@ function CFilesSharePopup()
 	this.selectedTeammateEmail = ko.observable('');
 	this.selectedTeammateData = ko.observable(null);
 	this.selectedTeammateData.subscribe(function () {
+		console.log('this.selectedTeammateData()', this.selectedTeammateData());
 		if (this.selectedTeammateData()) {
 			this.selectedTeammateEmail(this.selectedTeammateData().value);
 		}
@@ -120,7 +121,8 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 CFilesSharePopup.prototype.getCurrentShares = function ()
 {
 	return _.map(this.shares(), function (share) {
-		var access = share.access();
+		console.log('share', share);
+		const access = share.access();
 		if (this.sharedWithAll()) {
 			if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && access !== Enums.SharedFileAccess.Reshare) {
 				access = Enums.SharedFileAccess.Write;
@@ -128,10 +130,17 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 				access = Enums.SharedFileAccess.Reshare;
 			}
 		}
-		return {
-			PublicId: share.sPublicId,
-			Access: access
-		};
+		if (share.groupId) {
+			return {
+				GroupId: share.groupId,
+				Access: access
+			};
+		} else {
+			return {
+				PublicId: share.publicId,
+				Access: access
+			};
+		}
 	}, this);
 };
 
@@ -182,7 +191,7 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 				var suggestEmailLower = suggest.email.toLowerCase();
 				return suggestEmailLower !== this.oFileItem.sOwnerName.toLowerCase()
 						&& !_.find(this.shares(), function (share) {
-							return share.sPublicId.toLowerCase() === suggestEmailLower;
+							return share.publicId.toLowerCase() === suggestEmailLower;
 						});
 			}, this);
 			this.lastRecievedSuggestList = filteredList;
@@ -280,6 +289,7 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 
 	this.shares.push(new CShareModel({
 		PublicId: this.selectedTeammateData().email,
+		GroupId: this.selectedTeammateData().groupId,
 		Access: access
 	}));
 
@@ -294,11 +304,18 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 	}
 };
 
-CFilesSharePopup.prototype.deleteShare = function (publicId)
+CFilesSharePopup.prototype.deleteShare = function (publicId, groupId)
 {
-	this.shares(_.filter(this.shares(), function (share) {
-		return share.sPublicId !== publicId;
-	}));
+	console.log({publicId, groupId});
+	if (groupId) {
+		this.shares(_.filter(this.shares(), function (share) {
+			return share.groupId !== groupId;
+		}));
+	} else {
+		this.shares(_.filter(this.shares(), function (share) {
+			return share.publicId !== publicId;
+		}));
+	}
 };
 
 CFilesSharePopup.prototype.setSharedWithAllAccess = function (sharedWithAllAccess)
@@ -317,7 +334,7 @@ CFilesSharePopup.prototype.setSharedWithAllAccess = function (sharedWithAllAcces
 	}
 	if (lowerPermissionShares.length > 0) {
 		var confirmText = TextUtils.i18n('%MODULENAME%/WARNING_PERMISSIONS_UPGRADE_PLURAL', {
-			'USER': lowerPermissionShares[0].sPublicId
+			'USER': lowerPermissionShares[0].publicId
 		}, '', lowerPermissionShares.length);
 		Popups.showPopup(ConfirmPopup, [confirmText, function (upgradeConfirmed) {
 			if (upgradeConfirmed) {

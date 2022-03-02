@@ -64,8 +64,8 @@
 						<!-- ko if: shares().length > 0 -->
 						<div class="shares_list shares_list_bordered" data-bind="foreach: shares">
 							<div class="item item_share">
-								<span class="title" data-bind="text: sPublicId"></span>
-								<span class="del" data-bind="click: function () { $parent.deleteShare(sPublicId); }"></span>
+								<span class="title" data-bind="text: publicId"></span>
+								<span class="del" data-bind="click: function () { $parent.deleteShare(publicId, groupId); }"></span>
 								<span class="access_select" data-bind="dropdown: {}">
 									<span class="dropdown_position_fixed">
 										<span class="dropdown">
