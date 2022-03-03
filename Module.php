@@ -257,33 +257,62 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
 				$Storage = $oNode->getStorage();
 			}
-			$aShares = $this->oBackend->getShares(
+
+			$aResultShares = [];
+			foreach ($Shares as $key => $item) {
+				if (isset($item['GroupId'])) {
+					$aUsers = CoreModule::Decorator()->GetGroupUsers($oUser->IdTenant, (int) $item['GroupId']);
+					foreach ($aUsers as $aUser) {
+						$aResultShares[] = [
+							'PublicId' => $aUser['PublicId'],
+							'Access' => (int) $item['Access'],
+							'GroupId' => (int) $item['GroupId'],
+						];
+					}
+				} else {
+					$item['GroupId'] = null;
+					$aResultShares[] = $item;
+				}
+			}
+
+			$aDbShares = $this->oBackend->getShares(
 				$sUserPrincipalUri, 
 				$Storage, '/' . \ltrim($FullPath, '/')
 			);
-			
+
 			$aOldSharePrincipals = array_map(function ($aShareItem) {
-				return $aShareItem['principaluri'];
-			}, $aShares);
+				if (isset($aShareItem['principaluri'])) {
+					return [
+						$aShareItem['principaluri'], 
+						$aShareItem['group_id']
+					];
+				}
+			}, $aDbShares);
 			
 			$aNewSharePrincipals = array_map(function ($aShareItem) {
-				return Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'];
-			}, $Shares);
+				if (isset($aShareItem['PublicId'])) {
+					return [
+						Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'],
+						$aShareItem['GroupId']
+					];
+				}
+			}, $aResultShares);
 
-			$aItemsToDelete = array_diff($aOldSharePrincipals, $aNewSharePrincipals);
-			$aItemsToCreate = array_diff($aNewSharePrincipals, $aOldSharePrincipals);
-			$aItemsToUpdate = array_intersect($aOldSharePrincipals, $aNewSharePrincipals);
+			$aItemsToDelete = array_diff_assoc($aOldSharePrincipals, $aNewSharePrincipals);
+			$aItemsToCreate = array_diff_assoc($aNewSharePrincipals, $aOldSharePrincipals);
+			$aItemsToUpdate = array_intersect_assoc($aOldSharePrincipals, $aNewSharePrincipals);
 
-			foreach ($aItemsToDelete as $sItem) {
+			foreach ($aItemsToDelete as $aItem) {
 				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri(
-					$sItem, 
+					$aItem[0], 
 					$Storage, 
-					$FullPath
+					$FullPath,
+					$aItem[1]
 				);
 			}
 
-			foreach ($Shares as $Share) {
-				if (!$bIsShared && $oUser->PublicId === $Share['PublicId']) {
+			foreach ($aResultShares as $Share) {
+				if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && !isset($Share['GroupId'])) {
 					throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
 				}
 				if (!CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
@@ -301,17 +330,27 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			if ($bIsEncrypted && count($aReshare) > 0) {
 				throw new ApiException(Enums\ErrorCodes::CantReshareEncryptedFile);
 			}
+
 			$aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
 			if (!empty($aDuplicatedUsers)) {
-				throw new ApiException(Enums\ErrorCodes::DuplicatedUsers);
+//				throw new ApiException(Enums\ErrorCodes::DuplicatedUsers);
 			}
 
 			$aGuestPublicIds = [];
-			foreach ($Shares as $aShare) {
+			foreach ($aResultShares as $aShare) {
 				$sPrincipalUri = Constants::PRINCIPALS_PREFIX . $aShare['PublicId'];
+
+				$groupId = isset($aShare['GroupId']) ? (int) $aShare['GroupId'] : null;
 				
 				try {
-					if (in_array($sPrincipalUri, $aItemsToCreate)) {
+					$bCreate = false;
+					foreach($aItemsToCreate as $aItemToCreate) {
+						if ($sPrincipalUri === $aItemToCreate[0] && $groupId == $aItemToCreate[1]) {
+							$bCreate = true;
+							break;
+						}
+					}
+					if ($bCreate) {
 						$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
 						$mResult = $mResult && $this->oBackend->createSharedFile(
 							$sUserPrincipalUri, 
@@ -320,15 +359,28 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 							$sNonExistentFileName, 
 							$sPrincipalUri, 
 							$aShare['Access'], 
-							$IsDir
+							$IsDir,
+							'',
+							$groupId
 						);
-					} else if (in_array($sPrincipalUri, $aItemsToUpdate)) {
-						$mResult = $mResult && $this->oBackend->updateSharedFile(
-							$sUserPrincipalUri, $Storage, 
-							$FullPath, 
-							$sPrincipalUri, 
-							$aShare['Access']
-						);
+					} else {
+						$bUpdate = false;
+						foreach($aItemsToUpdate as $aItemToUpdate) {
+							if ($sPrincipalUri === $aItemToUpdate[0] && $groupId == $aItemToUpdate[1]) {
+								$bUpdate = true;
+								break;
+							}
+						}
+						if ($bUpdate) {
+							$mResult = $mResult && $this->oBackend->updateSharedFile(
+								$sUserPrincipalUri, 
+								$Storage, 
+								$FullPath, 
+								$sPrincipalUri, 
+								$aShare['Access'],
+								$groupId
+							);
+						}
 					}
 				} catch (\PDOException $oEx) {
 					if (isset($oEx->errorInfo[1]) && $oEx->errorInfo[1] === 1366) {
