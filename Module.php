@@ -159,7 +159,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 			$aGroups = [];
 			foreach ($aShares as $aShare) {
-				if (isset($aShare['group_id']) && !in_array($aShare['group_id'], $aGroups)) {
+				if ($aShare['group_id'] != 0 && !in_array($aShare['group_id'], $aGroups)) {
 					$oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
 					if ($oGroup) {
 						$aGroups[] = $aShare['group_id'];
@@ -270,7 +270,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						];
 					}
 				} else {
-					$item['GroupId'] = null;
+					$item['GroupId'] = 0;
 					$aResultShares[] = $item;
 				}
 			}
@@ -312,7 +312,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 
 			foreach ($aResultShares as $Share) {
-				if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && !isset($Share['GroupId'])) {
+				if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && $Share['GroupId'] == 0) {
 					throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
 				}
 				if (!CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
@@ -340,7 +340,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($aResultShares as $aShare) {
 				$sPrincipalUri = Constants::PRINCIPALS_PREFIX . $aShare['PublicId'];
 
-				$groupId = isset($aShare['GroupId']) ? (int) $aShare['GroupId'] : null;
+				$groupId = (int) $aShare['GroupId'];
 				
 				try {
 					$bCreate = false;
