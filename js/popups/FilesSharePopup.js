@@ -59,7 +59,6 @@ function CFilesSharePopup()
 	this.selectedTeammateEmail = ko.observable('');
 	this.selectedTeammateData = ko.observable(null);
 	this.selectedTeammateData.subscribe(function () {
-		console.log('this.selectedTeammateData()', this.selectedTeammateData());
 		if (this.selectedTeammateData()) {
 			this.selectedTeammateEmail(this.selectedTeammateData().value);
 		}
@@ -121,7 +120,6 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 CFilesSharePopup.prototype.getCurrentShares = function ()
 {
 	return _.map(this.shares(), function (share) {
-		console.log('share', share);
 		const access = share.access();
 		if (this.sharedWithAll()) {
 			if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && access !== Enums.SharedFileAccess.Reshare) {
@@ -132,8 +130,10 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 		}
 		if (share.groupId) {
 			return {
-				GroupId: share.groupId,
-				Access: access
+				PublicId: share.publicId,
+				Access: access,
+				IsGroup: true,
+				GroupId: share.groupId
 			};
 		} else {
 			return {
@@ -306,7 +306,6 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 
 CFilesSharePopup.prototype.deleteShare = function (publicId, groupId)
 {
-	console.log({publicId, groupId});
 	if (groupId) {
 		this.shares(_.filter(this.shares(), function (share) {
 			return share.groupId !== groupId;
