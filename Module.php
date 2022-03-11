@@ -162,17 +162,20 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 			$aGroups = [];
 			foreach ($aShares as $aShare) {
-				if ($aShare['group_id'] != 0 && !in_array($aShare['group_id'], $aGroups)) {
-					$oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
-					if ($oGroup) {
-						$aGroups[] = $aShare['group_id'];
+				if ($aShare['group_id'] != 0) {
 
-						$aResult[] = [
-							'PublicId' => $oGroup->Name,
-							'Access' => $aShare['access'],
-							'IsGroup' => true,
-							'GroupId' => (int) $aShare['group_id']
-						];
+					if (!in_array($aShare['group_id'], $aGroups)) {
+						$oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
+						if ($oGroup) {
+							$aGroups[] = $aShare['group_id'];
+
+							$aResult[] = [
+								'PublicId' => $oGroup->Name,
+								'Access' => $aShare['access'],
+								'IsGroup' => true,
+								'GroupId' => (int) $aShare['group_id']
+							];
+						}
 					}
 				} else {
 					$aResult[] = [
