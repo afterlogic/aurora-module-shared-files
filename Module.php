@@ -491,14 +491,33 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterAddUsersToGroup($aArgs, &$mResult)
 	{
 		if ($mResult) {
-
+			$aDbShares = $this->oBackend->getSharesByGroupId($aArgs['GroupId']);
+			foreach ($aDbShares as $aDbShare) {
+				foreach ($aArgs['UserIds'] as $iUserId) {
+					$oUser = Api::getUserById($iUserId);
+					$mResult = $mResult & $this->oBackend->createSharedFile(
+						$aDbShare['owner'], 
+						$aDbShare['storage'], 
+						$aDbShare['path'], 
+						basename($aDbShare['path']), 
+						'principals/' . $oUser->PublicId, 
+						$aDbShare['access'], 
+						$aDbShare['isdir'],
+						'',
+						$aDbShare['group_id']
+					);				
+				}
+			}
 		}
 	}
 
 	public function onAfterRemoveUsersFromGroup($aArgs, &$mResult)
 	{
 		if ($mResult) {
-			
+			foreach ($aArgs['UserIds'] as $iUserId) {
+				$oUser = Api::getUserById($iUserId);
+				$this->oBackend->deleteShareByPrincipaluriAndGroupId('principals/' . $oUser->PublicId, $aArgs['GroupId']);
+			}
 		}		
 	}
 }
