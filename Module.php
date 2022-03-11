@@ -85,6 +85,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Files::GetFiles::after', [$this, 'onAfterGetFiles']);
 		$this->subscribeEvent('Files::GetItems::after', [$this, 'onAfterGetItems'], 10000);
+
+		$this->subscribeEvent('Core::AddUsersToGroup::after', [$this, 'onAfterAddUsersToGroup']);
+		$this->subscribeEvent('Core::RemoveUsersFromGroup::after', [$this, 'onAfterRemoveUsersFromGroup']);
 	}
 
 	/**
@@ -191,14 +194,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 *
 	 * @return string
 	 */
-	protected function getNonExistentFileName($principalUri, $sFileName, $sPath = '')
+	protected function getNonExistentFileName($principalUri, $sFileName, $sPath = '', $bWithoutGroup = false)
 	{
 		$iIndex = 1;
 		$sFileNamePathInfo = pathinfo($sFileName);
 		$sExt = isset($sFileNamePathInfo['extension']) ? '.'.$sFileNamePathInfo['extension'] : '';
 		$sNameWOExt = isset($sFileNamePathInfo['filename']) ? $sFileNamePathInfo['filename'] : $sFileName;
 
-		while ($this->oBackend->getSharedFileByUidWithPath($principalUri, $sFileName, $sPath))
+		while ($this->oBackend->getSharedFileByUidWithPath($principalUri, $sFileName, $sPath, $bWithoutGroup))
 		{
 			$sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
 			$iIndex++;
@@ -212,7 +215,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$oUser->Id,
 				FileStorageType::Personal,
 				$sPath,
-				$sFileName
+				$sFileName,
+				$bWithoutGroup
 			);
 			Api::skipCheckUserRole($sPrevState);
 		}
@@ -282,27 +286,28 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$aOldSharePrincipals = array_map(function ($aShareItem) {
 				if (isset($aShareItem['principaluri'])) {
-					return [
+					return \json_encode([
 						$aShareItem['principaluri'], 
 						$aShareItem['group_id']
-					];
+					]);
 				}
 			}, $aDbShares);
 			
 			$aNewSharePrincipals = array_map(function ($aShareItem) {
 				if (isset($aShareItem['PublicId'])) {
-					return [
+					return \json_encode([
 						Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'],
 						$aShareItem['GroupId']
-					];
+					]);
 				}
 			}, $aResultShares);
 
-			$aItemsToDelete = array_diff_assoc($aOldSharePrincipals, $aNewSharePrincipals);
-			$aItemsToCreate = array_diff_assoc($aNewSharePrincipals, $aOldSharePrincipals);
-			$aItemsToUpdate = array_intersect_assoc($aOldSharePrincipals, $aNewSharePrincipals);
+			$aItemsToDelete = array_diff($aOldSharePrincipals, $aNewSharePrincipals);
+			$aItemsToCreate = array_diff($aNewSharePrincipals, $aOldSharePrincipals);
+			$aItemsToUpdate = array_intersect($aOldSharePrincipals, $aNewSharePrincipals);
 
 			foreach ($aItemsToDelete as $aItem) {
+				$aItem = \json_decode($aItem);
 				$mResult = $this->oBackend->deleteSharedFileByPrincipalUri(
 					$aItem[0], 
 					$Storage, 
@@ -345,13 +350,18 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				try {
 					$bCreate = false;
 					foreach($aItemsToCreate as $aItemToCreate) {
+						$aItemToCreate = \json_decode($aItemToCreate);
 						if ($sPrincipalUri === $aItemToCreate[0] && $groupId == $aItemToCreate[1]) {
 							$bCreate = true;
 							break;
 						}
 					}
 					if ($bCreate) {
-						$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id);
+						if ($groupId == 0) {
+							$sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id, '', true);
+						} else {
+							$sNonExistentFileName = $Id;
+						}
 						$mResult = $mResult && $this->oBackend->createSharedFile(
 							$sUserPrincipalUri, 
 							$Storage, 
@@ -366,6 +376,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					} else {
 						$bUpdate = false;
 						foreach($aItemsToUpdate as $aItemToUpdate) {
+							$aItemToUpdate = \json_decode($aItemToUpdate);
 							if ($sPrincipalUri === $aItemToUpdate[0] && $groupId == $aItemToUpdate[1]) {
 								$bUpdate = true;
 								break;
@@ -472,5 +483,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterGetSubModules($aArgs, &$mResult)
 	{
 		array_unshift($mResult, self::$sStorageType);
+	}
+
+	public function onAfterAddUsersToGroup($aArgs, &$mResult)
+	{
+		if ($mResult) {
+
+		}
+	}
+
+	public function onAfterRemoveUsersFromGroup($aArgs, &$mResult)
+	{
+		if ($mResult) {
+			
+		}		
 	}
 }
