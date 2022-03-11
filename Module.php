@@ -495,7 +495,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			foreach ($aDbShares as $aDbShare) {
 				foreach ($aArgs['UserIds'] as $iUserId) {
 					$oUser = Api::getUserById($iUserId);
-					$mResult = $mResult & $this->oBackend->createSharedFile(
+					$mResult = $mResult && $this->oBackend->createSharedFile(
 						$aDbShare['owner'], 
 						$aDbShare['storage'], 
 						$aDbShare['path'], 
