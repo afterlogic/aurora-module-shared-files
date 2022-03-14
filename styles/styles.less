@@ -106,6 +106,37 @@
 		cursor: default;
 		overflow: visible;
 
+		.title {
+			max-width: calc(65% - 26px);
+			display: inline-block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+
+			&.title_group {
+				max-width: calc(65% - 52px);
+			}
+		}
+
+		span.group {
+			color: #8d8d8d;
+			cursor: pointer;
+			display: inline-block;
+			font-size: 23px;
+			position: relative;
+			text-shadow: 0 1px 0 #ffffff, 0 0 0 #c8c8c8;
+			width: 25px;
+
+			.init-icon-font();
+
+			&:before {
+				content: "\e667";
+				left: 2px;
+				position: absolute;
+				top: -17px;
+			}
+		}
+
 		.access_select {
 			float: right;
 			position: relative;
@@ -117,7 +148,7 @@
 				text-decoration: none;
 			}
 		}
-		
+
 		span.del {
 			cursor: pointer;
 			color: #b7b7b7;
