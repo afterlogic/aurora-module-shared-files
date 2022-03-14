@@ -88,6 +88,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Core::AddUsersToGroup::after', [$this, 'onAfterAddUsersToGroup']);
 		$this->subscribeEvent('Core::RemoveUsersFromGroup::after', [$this, 'onAfterRemoveUsersFromGroup']);
+		$this->subscribeEvent('Core::UpdateUser::after', [$this, 'onAfterUpdateUser']);
 	}
 
 	/**
@@ -509,6 +510,49 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					);				
 				}
 			}
+		}
+	}
+
+	public function onAfterUpdateUser($aArgs, &$mResult)
+	{
+		if ($mResult) {
+
+			$groupIds = $aArgs['GroupIds'];
+			$userId = $aArgs['UserId'];
+
+			$userPublicId = Api::getUserPublicIdById($userId);
+			$sUserPrincipalUri = 'principals/' . $userPublicId;
+			$aDbCreateShares = $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, false);
+			$aDbUpdateShares = $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, true);
+
+			foreach ($aDbCreateShares as $aShare) {
+				
+				$mResult && $this->oBackend->createSharedFile(
+					$aShare['owner'], 
+					$aShare['storage'], 
+					$aShare['path'], 
+					basename($aShare['path']), 
+					$sUserPrincipalUri, 
+					$aShare['access'], 
+					$aShare['isdir'],
+					'',
+					$aShare['group_id']
+				);
+			}
+
+			foreach ($aDbUpdateShares as $aShare) {
+				
+				$mResult && $this->oBackend->updateSharedFile(
+					$aShare['owner'], 
+					$aShare['storage'], 
+					$aShare['path'], 
+					basename($aShare['path']), 
+					$sUserPrincipalUri, 
+					$aShare['access'], 
+					$aShare['group_id']
+				);
+			}
+
 		}
 	}
 
