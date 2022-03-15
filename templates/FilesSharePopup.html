@@ -39,7 +39,10 @@
 							<div class="item item_share">
 								<span class="title" data-bind="text: publicId, css: { 'title_group': groupId }"></span>
 								<span class="group" data-bind="visible: groupId"></span>
-								<span class="del" data-bind="click: function () { $parent.deleteShare(publicId, groupId); }"></span>
+								<span class="del" data-bind="
+									  click: function () { $parent.deleteShare(publicId, groupId); },
+									  style: { visibility: $parent.loadingFileShares() ? 'hidden' : '' }"
+								></span>
 								<span class="access_select" data-bind="dropdown: {}">
 									<span class="dropdown_position_fixed">
 										<span class="dropdown">
@@ -66,7 +69,7 @@
 				<span class="button contour_button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_SHOW_HISTORY'},
 						click: showHistory, visible: bAllowShowHistory"></span>
 				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
-						click: saveShares, css: {'disabled': isSaving()}"></span>
+						click: checkAndSaveShares, css: {'disabled': isSaving()}"></span>
 				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
 						click: cancelPopup, css: {'disabled': isSaving()}"
 				></span>

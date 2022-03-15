@@ -68,6 +68,7 @@ function CFilesSharePopup()
 	this.lastRecievedSuggestList = [];
 
 	this.isSaving = ko.observable(false);
+	this.loadingFileShares = ko.observable(false);
 
 	this.bAllowShowHistory = !!ShowHistoryPopup;
 }
@@ -98,11 +99,64 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 			}
 		);
 
-		var sharesData = Types.pArray(fileItem.oExtendedProps && fileItem.oExtendedProps.Shares);
-		this.shares(_.map(sharesData, function (shareData) {
-			return new CShareModel(shareData);
-		}));
+		this.fillUpShares();
+		this.requestFileShares(function (shares) {
+			this.updateFileShares(shares);
+			this.fillUpShares();
+		}.bind(this));
 	}
+};
+
+CFilesSharePopup.prototype.fillUpShares = function ()
+{
+	const
+		extendedProps = this.oFileItem && this.oFileItem.oExtendedProps,
+		sharesData = Types.pArray(extendedProps && extendedProps.Shares)
+	;
+	this.shares(_.map(sharesData, function (shareData) {
+		return new CShareModel(shareData);
+	}));
+};
+
+CFilesSharePopup.prototype.requestFileShares = function (callback)
+{
+	const fileItem = this.oFileItem;
+	const parameters = {
+		'Type': fileItem.storageType(),
+		'Path': fileItem.path(),
+		'Pattern': fileItem.fileName()
+	};
+	this.loadingFileShares(true);
+	Ajax.send(
+		'Files',
+		'GetFiles',
+		parameters,
+		function (response, request) {
+			this.loadingFileShares(false);
+			const
+				items = Types.pArray(response && response.Result && response.Result.Items),
+				item = items.find(item => item.Id === fileItem.id() && item.Path === fileItem.path()),
+				extendedProps = item && item.ExtendedProps
+			;
+			if (extendedProps) {
+				callback(extendedProps.Shares);
+			}
+		}.bind(this)
+	);
+};
+
+CFilesSharePopup.prototype.updateFileShares = function (shares)
+{
+	if (!this.oFileItem) {
+		return;
+	}
+
+	//Update shares list in oFile object
+	if (!this.oFileItem.oExtendedProps) {
+		this.oFileItem.oExtendedProps = {};
+	}
+	this.oFileItem.oExtendedProps.Shares = Types.pArray(shares);
+	this.oFileItem.sharedWithOthers(this.oFileItem.oExtendedProps.Shares.length > 0);
 };
 
 CFilesSharePopup.prototype.getCurrentShares = function ()
@@ -295,6 +349,34 @@ CFilesSharePopup.prototype.deleteShare = function (publicId, groupId)
 	}
 };
 
+CFilesSharePopup.prototype.checkAndSaveShares = function ()
+{
+	if (this.isSaving()) {
+		return;
+	}
+
+	this.isSaving(true);
+	this.requestFileShares(function (sharesFromServer) {
+		this.isSaving(false);
+		const fileItem = this.oFileItem;
+		let savedShares = Types.pArray(fileItem && fileItem.oExtendedProps && fileItem.oExtendedProps.Shares);
+		sharesFromServer = _.sortBy(sharesFromServer, 'PublicId');
+		savedShares = _.sortBy(savedShares, 'PublicId');
+		if (_.isEqual(savedShares, sharesFromServer)) {
+			this.saveShares();
+		} else {
+			const
+				alertText = TextUtils.i18n('%MODULENAME%/WARNING_SHARES_CHANGED_BY_OTHER_USER'),
+				alertCallback = function () {
+					this.updateFileShares(sharesFromServer);
+					this.fillUpShares();
+				}.bind(this)
+			;
+			Popups.showPopup(AlertPopup, [alertText, alertCallback]);
+		}
+	}.bind(this));
+};
+
 CFilesSharePopup.prototype.saveShares = function ()
 {
 	if (this.isSaving()) {
@@ -368,15 +450,7 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (response, request)
 {
 	this.isSaving(false);
 	if (response.Result) {
-		//Update shares list in oFile object
-		if (!this.oFileItem.oExtendedProps) {
-			this.oFileItem.oExtendedProps = {};
-		}
-
-		this.oFileItem.oExtendedProps.Shares = request.Parameters.Shares;
-		this.oFileItem.oExtendedProps.SharedWithAllAccess = request.Parameters.SharedWithAllAccess;
-
-		this.oFileItem.sharedWithOthers(this.oFileItem.oExtendedProps.Shares.length > 0 || !!this.oFileItem.oExtendedProps.SharedWithAllAccess);
+		this.updateFileShares(request.Parameters.Shares);
 		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
 		this.oFileItem = null;
 		this.closePopup();
