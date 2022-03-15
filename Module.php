@@ -522,8 +522,53 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$userPublicId = Api::getUserPublicIdById($userId);
 			$sUserPrincipalUri = 'principals/' . $userPublicId;
-			$aDbCreateShares = $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, false);
-			$aDbUpdateShares = $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, true);
+			
+			$aDbCreateShares = [];
+			$aDbUpdateShares = [];
+
+			if (count($groupIds)) {
+				
+				$aDbSharesWithoutPrincipal = array_map(function ($aShare) {
+					return \json_encode($aShare);
+				}, $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, false));
+
+				$aDbSharesWithPrincipal = array_map(function ($aShare) {
+					return \json_encode($aShare);
+				}, $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, true));
+
+				$aDbCreateShares = array_map(function ($aShare) {
+					return \json_decode($aShare, true);
+				}, array_diff($aDbSharesWithoutPrincipal, $aDbSharesWithPrincipal));
+
+				$aDbUpdateShares = array_map(function ($aShare) {
+					return \json_decode($aShare, true);
+				}, array_intersect($aDbSharesWithPrincipal, $aDbSharesWithoutPrincipal));
+			}
+
+			$aDbGroupIds = array_unique(
+				array_merge( 
+				
+					array_map(function ($aShare) {
+						return $aShare['group_id'];
+					}, $aDbCreateShares),
+					
+					array_map(function ($aShare) {
+						return $aShare['group_id'];
+					}, $aDbUpdateShares)
+				)
+			);
+			
+			$aDeleteShares = array_diff(
+				array_map(function ($aShare) {
+					return $aShare['group_id'];
+				}, $this->oBackend->getSharedFilesForUser($sUserPrincipalUri)),
+				$aDbGroupIds
+			);
+
+			foreach ($aDeleteShares as $iGroupId) {
+
+				$this->oBackend->deleteShareByPrincipaluriAndGroupId($sUserPrincipalUri, $iGroupId);
+			}
 
 			foreach ($aDbCreateShares as $aShare) {
 				
@@ -552,7 +597,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$aShare['group_id']
 				);
 			}
-
 		}
 	}
 
