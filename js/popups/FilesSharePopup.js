@@ -134,7 +134,7 @@ CFilesSharePopup.prototype.hasChanges = function ()
 	;
 	savedShares = _.sortBy(savedShares, 'PublicId');
 	currentShares = _.sortBy(currentShares, 'PublicId');
-	return fileItem && (!_.isEqual(savedShares, currentShares) || this.selectedTeammateEmail();
+	return fileItem && (!_.isEqual(savedShares, currentShares) || this.selectedTeammateEmail());
 };
 
 CFilesSharePopup.prototype.onEscHandler = function ()
