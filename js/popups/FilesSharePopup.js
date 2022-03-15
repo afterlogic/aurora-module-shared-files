@@ -67,16 +67,6 @@ function CFilesSharePopup()
 	this.selectAccessDom = ko.observable(null);
 	this.lastRecievedSuggestList = [];
 
-	this.sharedWithAll = ko.observable(false);
-	this.sharedWithAllAccess = ko.observable(Enums.SharedFileAccess.Read);
-	this.sharedWithAllAccessText = ko.computed(function () {
-		switch (this.sharedWithAllAccess()) {
-			case Enums.SharedFileAccess.Reshare: return TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS');
-			case Enums.SharedFileAccess.Write: return TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS');
-			default: return TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS');
-		}
-	}, this);
-	
 	this.isSaving = ko.observable(false);
 
 	this.bAllowShowHistory = !!ShowHistoryPopup;
@@ -112,8 +102,6 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 		this.shares(_.map(sharesData, function (shareData) {
 			return new CShareModel(shareData);
 		}));
-		this.sharedWithAll(!!fileItem.oExtendedProps.SharedWithAllAccess);
-		this.sharedWithAllAccess(Types.pEnum(fileItem.oExtendedProps.SharedWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
 	}
 };
 
@@ -121,13 +109,6 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 {
 	return _.map(this.shares(), function (share) {
 		const access = share.access();
-		if (this.sharedWithAll()) {
-			if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Write && access !== Enums.SharedFileAccess.Reshare) {
-				access = Enums.SharedFileAccess.Write;
-			} else if (this.sharedWithAllAccess() === Enums.SharedFileAccess.Reshare) {
-				access = Enums.SharedFileAccess.Reshare;
-			}
-		}
 		if (share.groupId) {
 			return {
 				PublicId: share.publicId,
@@ -153,10 +134,7 @@ CFilesSharePopup.prototype.hasChanges = function ()
 	;
 	savedShares = _.sortBy(savedShares, 'PublicId');
 	currentShares = _.sortBy(currentShares, 'PublicId');
-	return	fileItem && (!_.isEqual(savedShares, currentShares)
-			|| this.selectedTeammateEmail()
-			|| this.sharedWithAll() !== !!fileItem.oExtendedProps.SharedWithAllAccess
-			|| this.sharedWithAllAccess() !== Types.pEnum(fileItem.oExtendedProps.SharedWithAllAccess, Enums.SharedFileAccess, Enums.SharedFileAccess.Read));
+	return fileItem && (!_.isEqual(savedShares, currentShares) || this.selectedTeammateEmail();
 };
 
 CFilesSharePopup.prototype.onEscHandler = function ()
@@ -317,37 +295,6 @@ CFilesSharePopup.prototype.deleteShare = function (publicId, groupId)
 	}
 };
 
-CFilesSharePopup.prototype.setSharedWithAllAccess = function (sharedWithAllAccess)
-{
-	var lowerPermissionShares = [];
-	if (this.sharedWithAll()) {
-		if (sharedWithAllAccess === Enums.SharedFileAccess.Write) {
-			lowerPermissionShares = _.filter(this.shares(), function (share) {
-				return share.access() === Enums.SharedFileAccess.Read;
-			});
-		} else if (sharedWithAllAccess === Enums.SharedFileAccess.Reshare) {
-			lowerPermissionShares = _.filter(this.shares(), function (share) {
-				return share.access() === Enums.SharedFileAccess.Read || share.access() === Enums.SharedFileAccess.Write;
-			});
-		}
-	}
-	if (lowerPermissionShares.length > 0) {
-		var confirmText = TextUtils.i18n('%MODULENAME%/WARNING_PERMISSIONS_UPGRADE_PLURAL', {
-			'USER': lowerPermissionShares[0].publicId
-		}, '', lowerPermissionShares.length);
-		Popups.showPopup(ConfirmPopup, [confirmText, function (upgradeConfirmed) {
-			if (upgradeConfirmed) {
-				this.sharedWithAllAccess(sharedWithAllAccess);
-				_.each(lowerPermissionShares, function (share) {
-					share.access(sharedWithAllAccess);
-				}, this);
-			}
-		}.bind(this), '', TextUtils.i18n('%MODULENAME%/ACTION_UPGRADE_PERMISSIONS')]);
-	} else {
-		this.sharedWithAllAccess(sharedWithAllAccess);
-	}
-};
-
 CFilesSharePopup.prototype.saveShares = function ()
 {
 	if (this.isSaving()) {
@@ -385,7 +332,6 @@ CFilesSharePopup.prototype.confirmedSaveShares = function ()
 			'Path': this.oFileItem.path(),
 			'Id': this.oFileItem.id(),
 			'Shares': shares,
-			'SharedWithAllAccess': this.sharedWithAll() ? this.sharedWithAllAccess() : undefined,
 			'IsDir': !this.oFileItem.IS_FILE
 		},
 		fOnSuccessCallback = _.bind(function () {
