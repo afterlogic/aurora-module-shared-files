@@ -25,6 +25,8 @@ class AlterAdavSharedfilesTableAddReference extends Migration
      */
     public function down()
     {
-        //
+        Capsule::schema()->table('adav_sharedfiles', function (Blueprint $table) {
+            $table->dropForeign('adav_sharedfiles_group_id_foreign');
+        });
     }
 }
