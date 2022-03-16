@@ -493,16 +493,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onAfterAddUsersToGroup($aArgs, &$mResult)
 	{
 		if ($mResult) {
-			$aDbShares = $this->oBackend->getSharesByGroupId($aArgs['GroupId']);
-			foreach ($aDbShares as $aDbShare) {
-				foreach ($aArgs['UserIds'] as $iUserId) {
-					$oUser = Api::getUserById($iUserId);
+			foreach ($aArgs['UserIds'] as $iUserId) {
+				$userPublicId = Api::getUserPublicIdById($iUserId);
+				$sUserPrincipalUri = 'principals/' . $userPublicId;
+				$aDbShares = $this->oBackend->getSharesByPrincipalUriAndGroupId($sUserPrincipalUri, $aArgs['GroupId']);
+
+				foreach ($aDbShares as $aDbShare) {
+
 					$mResult = $mResult && $this->oBackend->createSharedFile(
 						$aDbShare['owner'], 
 						$aDbShare['storage'], 
 						$aDbShare['path'], 
 						basename($aDbShare['path']), 
-						'principals/' . $oUser->PublicId, 
+						$sUserPrincipalUri, 
 						$aDbShare['access'], 
 						$aDbShare['isdir'],
 						'',
@@ -522,81 +525,35 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 			$userPublicId = Api::getUserPublicIdById($userId);
 			$sUserPrincipalUri = 'principals/' . $userPublicId;
-			
-			$aDbCreateShares = [];
-			$aDbUpdateShares = [];
 
-			if (count($groupIds)) {
+			if (count($groupIds) > 0) {
 				
-				$aDbSharesWithoutPrincipal = array_map(function ($aShare) {
-					return \json_encode($aShare);
-				}, $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, false));
+				$aDbCreateShares = [];
+				foreach ($groupIds as $groupId) {
+					$aDbCreateShares = array_merge(
+						$aDbCreateShares,
+						$this->oBackend->getSharesByPrincipalUriAndGroupId($sUserPrincipalUri, $groupId)
+					);
+				}
 
-				$aDbSharesWithPrincipal = array_map(function ($aShare) {
-					return \json_encode($aShare);
-				}, $this->oBackend->getSharesByGroupIds($sUserPrincipalUri, $groupIds, true));
-
-				$aDbCreateShares = array_map(function ($aShare) {
-					return \json_decode($aShare, true);
-				}, array_diff($aDbSharesWithoutPrincipal, $aDbSharesWithPrincipal));
-
-				$aDbUpdateShares = array_map(function ($aShare) {
-					return \json_decode($aShare, true);
-				}, array_intersect($aDbSharesWithPrincipal, $aDbSharesWithoutPrincipal));
-			}
-
-			$aDbGroupIds = array_unique(
-				array_merge( 
+				foreach ($aDbCreateShares as $aShare) {
 				
-					array_map(function ($aShare) {
-						return $aShare['group_id'];
-					}, $aDbCreateShares),
-					
-					array_map(function ($aShare) {
-						return $aShare['group_id'];
-					}, $aDbUpdateShares)
-				)
-			);
-			
-			$aDeleteShares = array_diff(
-				array_map(function ($aShare) {
-					return $aShare['group_id'];
-				}, $this->oBackend->getSharedFilesForUser($sUserPrincipalUri)),
-				$aDbGroupIds
-			);
-
-			foreach ($aDeleteShares as $iGroupId) {
-
-				$this->oBackend->deleteShareByPrincipaluriAndGroupId($sUserPrincipalUri, $iGroupId);
+					$mResult && $this->oBackend->createSharedFile(
+						$aShare['owner'], 
+						$aShare['storage'], 
+						$aShare['path'], 
+						basename($aShare['path']), 
+						$sUserPrincipalUri, 
+						$aShare['access'], 
+						$aShare['isdir'],
+						'',
+						$aShare['group_id']
+					);
+				}
+			} else {
+				$groupIds[] = 0;
 			}
-
-			foreach ($aDbCreateShares as $aShare) {
-				
-				$mResult && $this->oBackend->createSharedFile(
-					$aShare['owner'], 
-					$aShare['storage'], 
-					$aShare['path'], 
-					basename($aShare['path']), 
-					$sUserPrincipalUri, 
-					$aShare['access'], 
-					$aShare['isdir'],
-					'',
-					$aShare['group_id']
-				);
-			}
-
-			foreach ($aDbUpdateShares as $aShare) {
-				
-				$mResult && $this->oBackend->updateSharedFile(
-					$aShare['owner'], 
-					$aShare['storage'], 
-					$aShare['path'], 
-					basename($aShare['path']), 
-					$sUserPrincipalUri, 
-					$aShare['access'], 
-					$aShare['group_id']
-				);
-			}
+			$this->oBackend->deleteShareNotInGroups($sUserPrincipalUri, $groupIds);
 		}
 	}
 
