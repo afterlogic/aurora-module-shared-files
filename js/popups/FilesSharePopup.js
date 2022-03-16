@@ -215,9 +215,16 @@ CFilesSharePopup.prototype.cancelPopup = function ()
 
 CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 {
-	var
-		suggestionsAutocompleteCallback = ModulesManager.run('ContactsWebclient',
-			'getSuggestionsAutocompleteCallback', ['team', App.getUserPublicId()]),
+	const
+		suggestParameters = {
+			storage: 'team',
+			addContactGroups: false,
+			addUserGroups: true,
+			exceptEmail: App.getUserPublicId()
+		},
+		autocompleteCallback = ModulesManager.run(
+			'ContactsWebclient', 'getSuggestionsAutocompleteCallback', [suggestParameters]
+		),
 		markRecipientsWithKeyCallback = function (recipientList) {
 			var filteredList = _.filter(recipientList, function (suggest) {
 				var suggestEmailLower = suggest.email.toLowerCase();
@@ -235,9 +242,9 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 			}
 		}.bind(this)
 	;
-	if (_.isFunction(suggestionsAutocompleteCallback)) {
+	if (_.isFunction(autocompleteCallback)) {
 		this.selectedTeammateData(null);
-		suggestionsAutocompleteCallback(request, markRecipientsWithKeyCallback);
+		autocompleteCallback(request, markRecipientsWithKeyCallback);
 	}
 };
 
