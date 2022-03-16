@@ -90,6 +90,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Core::RemoveUsersFromGroup::after', [$this, 'onAfterRemoveUsersFromGroup']);
 		$this->subscribeEvent('Core::UpdateUser::after', [$this, 'onAfterUpdateUser']);
 		$this->subscribeEvent('Core::DeleteGroup::after', [$this, 'onAfterDeleteGroup']);
+		$this->subscribeEvent('Files::PopulateExtendedProps', [$this, 'onPopulateExtendedProps'], 10000);
 	}
 
 	/**
@@ -573,5 +574,21 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		if ($mResult) {
 			$this->oBackend->deleteSharesByGroupId($aArgs['GroupId']);
 		}
+	}
+
+	public function onPopulateExtendedProps(&$aArgs, &$mResult)
+	{
+		$oItem = $aArgs['Item'];
+		if ($oItem instanceof \Afterlogic\DAV\FS\Shared\File || $oItem instanceof \Afterlogic\DAV\FS\Shared\Directory) {
+			$mResult['SharedWithMeAccess'] = $oItem->getAccess();
+		}
+
+		$bSharedWithMe = isset($mResult['SharedWithMeAccess']) ? $mResult['SharedWithMeAccess'] === Permission::Reshare : false;
+		$mResult['Shares'] = $this->GetShares(
+			$aArgs['UserId'], 
+			$aArgs['Type'], 
+			\rtrim($aArgs['Path'], '/') . '/' . $aArgs['Name'], 
+			$bSharedWithMe
+		);
 	}
 }
