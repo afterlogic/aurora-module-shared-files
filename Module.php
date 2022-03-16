@@ -89,6 +89,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Core::AddUsersToGroup::after', [$this, 'onAfterAddUsersToGroup']);
 		$this->subscribeEvent('Core::RemoveUsersFromGroup::after', [$this, 'onAfterRemoveUsersFromGroup']);
 		$this->subscribeEvent('Core::UpdateUser::after', [$this, 'onAfterUpdateUser']);
+		$this->subscribeEvent('Core::DeleteGroup::after', [$this, 'onAfterDeleteGroup']);
 	}
 
 	/**
@@ -565,5 +566,12 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$this->oBackend->deleteShareByPrincipaluriAndGroupId('principals/' . $oUser->PublicId, $aArgs['GroupId']);
 			}
 		}		
+	}
+
+	public function onAfterDeleteGroup($aArgs, &$mResult)
+	{
+		if ($mResult) {
+			$this->oBackend->deleteSharesByGroupId($aArgs['GroupId']);
+		}
 	}
 }
