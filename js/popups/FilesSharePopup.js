@@ -124,22 +124,17 @@ CFilesSharePopup.prototype.requestFileShares = function (callback)
 	const parameters = {
 		'Type': fileItem.storageType(),
 		'Path': fileItem.path(),
-		'Pattern': fileItem.fileName()
+		'Name': fileItem.fileName()
 	};
 	this.loadingFileShares(true);
 	Ajax.send(
 		'Files',
-		'GetFiles',
+		'GetExtendedProps',
 		parameters,
 		function (response, request) {
 			this.loadingFileShares(false);
-			const
-				items = Types.pArray(response && response.Result && response.Result.Items),
-				item = items.find(item => item.Id === fileItem.id() && item.Path === fileItem.path()),
-				extendedProps = item && item.ExtendedProps
-			;
-			if (extendedProps) {
-				callback(extendedProps.Shares);
+			if (response && response.Result && response.Result.Shares) {
+				callback(response.Result.Shares);
 			}
 		}.bind(this)
 	);
