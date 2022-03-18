@@ -20,6 +20,7 @@ use Aurora\System\Exceptions\ApiException;
 use Afterlogic\DAV\FS\Shared\File as SharedFile;
 use Afterlogic\DAV\FS\Shared\Directory as SharedDirectory;
 use Aurora\Modules\Core\Models\User;
+use Aurora\Modules\SharedFiles\Enums\Access;
 use Aurora\System\Router;
 
 use function Sabre\Uri\split;
@@ -91,6 +92,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Core::UpdateUser::after', [$this, 'onAfterUpdateUser']);
 		$this->subscribeEvent('Core::DeleteGroup::after', [$this, 'onAfterDeleteGroup']);
 		$this->subscribeEvent('Files::PopulateExtendedProps', [$this, 'onPopulateExtendedProps'], 10000);
+		$this->subscribeEvent('Files::LeaveShare', [$this, 'onLeaveShare']);
 	}
 
 	/**
@@ -590,5 +592,47 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			\rtrim($aArgs['Path'], '/') . '/' . $aArgs['Name'], 
 			$bSharedWithMe
 		);
+	}
+
+	public function onLeaveShare(&$aArgs, &$mResult)
+	{
+		$UserId = $aArgs['UserId'];
+		Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
+		Api::CheckAccess($UserId);
+
+		$oUser = Api::getAuthenticatedUser();
+		if ($oUser instanceof User) {
+			$sUserPublicId = Api::getUserPublicIdById($UserId);
+			$sUserPrincipalUri = Constants::PRINCIPALS_PREFIX . $sUserPublicId;
+
+			foreach ($aArgs['Items'] as $aItem) {
+
+				if ($aItem->getGroupId() > 0) {
+					$this->oBackend->createSharedFile(
+						'principals/' . $aItem->getOwnerPublicId(), 
+						$aItem->getStorage(), 
+						$aItem->getRelativePath() . '/' . $aItem->getName(), 
+						$aItem->getName(), 
+						$sUserPrincipalUri, 
+						Access::NoAccess, 
+						($aItem instanceof SharedDirectory),
+						'',
+						0
+					);
+				} else {
+					$this->oBackend->updateSharedFile(
+						'principals/' . $aItem->getOwnerPublicId(), 
+						$aItem->getStorage(), 
+						$aItem->getRelativePath() . '/' . $aItem->getName(), 
+						$sUserPrincipalUri, 
+						Access::NoAccess, 
+						0
+
+					);					
+				}
+			}
+
+			$mResult = true;
+		}
 	}
 }
