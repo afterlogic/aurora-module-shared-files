@@ -166,6 +166,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 			}
 			$aGroups = [];
+			$sAllGrpoupName = CoreModule::getInstance()->i18N('LABEL_ALL_USERS_GROUP');
 			foreach ($aShares as $aShare) {
 				if ($aShare['group_id'] != 0) {
 
@@ -173,9 +174,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						$oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
 						if ($oGroup) {
 							$aGroups[] = $aShare['group_id'];
-
 							$aResult[] = [
-								'PublicId' => $oGroup->Name,
+								'PublicId' => $oGroup->IsAll ? $sAllGrpoupName : $oGroup->Name,
 								'Access' => $aShare['access'],
 								'IsGroup' => true,
 								'GroupId' => (int) $aShare['group_id']
