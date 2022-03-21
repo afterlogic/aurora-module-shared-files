@@ -38,7 +38,9 @@
 						<div class="shares_list shares_list_bordered" data-bind="foreach: shares">
 							<div class="item item_share">
 								<span class="title" data-bind="text: publicId, css: { 'title_group': groupId }"></span>
-								<span class="group" data-bind="visible: groupId"></span>
+								<span class="group" data-bind="visible: groupId,
+									  css: {'all_users_group': isAllUsersGroup}"
+								></span>
 								<span class="del" data-bind="
 									  click: function () { $parent.deleteShare(publicId, groupId); },
 									  style: { visibility: $parent.loadingFileShares() ? 'hidden' : '' }"

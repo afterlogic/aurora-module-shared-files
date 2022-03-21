@@ -177,6 +177,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 								'PublicId' => $oGroup->getName(),
 								'Access' => $aShare['access'],
 								'IsGroup' => true,
+								'IsAll' => !!$oGroup->IsAll,
 								'GroupId' => (int) $aShare['group_id']
 							];
 						}

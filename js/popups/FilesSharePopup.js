@@ -40,6 +40,7 @@ function CFilesSharePopup()
 		if (this.allowReshare()) {
 			list.push({ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') });
 		}
+		list.push({ value: Enums.SharedFileAccess.NoAccess, label: TextUtils.i18n('%MODULENAME%/LABEL_NOSHARE_ACCESS') });
 		return list;
 	}, this);
 
@@ -60,7 +61,7 @@ function CFilesSharePopup()
 	this.selectedTeammateData = ko.observable(null);
 	this.selectedTeammateData.subscribe(function () {
 		if (this.selectedTeammateData()) {
-			this.selectedTeammateEmail(this.selectedTeammateData().value);
+			this.selectedTeammateEmail(this.selectedTeammateData().email);
 		}
 	}, this);
 
@@ -162,6 +163,7 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 			return {
 				PublicId: share.publicId,
 				Access: access,
+				IsAll: share.isAllUsersGroup,
 				IsGroup: true,
 				GroupId: share.groupId
 			};
@@ -324,6 +326,7 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 	this.shares.push(new CShareModel({
 		PublicId: this.selectedTeammateData().email,
 		GroupId: this.selectedTeammateData().groupId,
+		IsAll: this.selectedTeammateData().isAllUsersGroup,
 		Access: access
 	}));
 
