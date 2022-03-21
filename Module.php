@@ -166,7 +166,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 			}
 			$aGroups = [];
-			$sAllGrpoupName = CoreModule::getInstance()->i18N('LABEL_ALL_USERS_GROUP');
 			foreach ($aShares as $aShare) {
 				if ($aShare['group_id'] != 0) {
 
@@ -175,7 +174,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						if ($oGroup) {
 							$aGroups[] = $aShare['group_id'];
 							$aResult[] = [
-								'PublicId' => $oGroup->IsAll ? $sAllGrpoupName : $oGroup->Name,
+								'PublicId' => $oGroup->getName(),
 								'Access' => $aShare['access'],
 								'IsGroup' => true,
 								'GroupId' => (int) $aShare['group_id']
