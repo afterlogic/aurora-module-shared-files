@@ -249,7 +249,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$oUser = Api::getAuthenticatedUser();
 		if ($oUser instanceof User) {
 			$sUserPublicId = Api::getUserPublicIdById($UserId);
-			$sUserPrincipalUri = Constants::PRINCIPALS_PREFIX . $sUserPublicId;
+			$sInitiator = $sUserPrincipalUri = Constants::PRINCIPALS_PREFIX . $sUserPublicId;
 			$FullPath =  $Path . '/' . $Id;
 			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
 			$oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
@@ -383,7 +383,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 							$aShare['Access'], 
 							$IsDir,
 							'',
-							$groupId
+							$groupId,
+							$sInitiator
 						);
 					} else {
 						$bUpdate = false;
@@ -516,7 +517,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						$aDbShare['access'], 
 						$aDbShare['isdir'],
 						'',
-						$aDbShare['group_id']
+						$aDbShare['group_id'],
+						$aDbShares['initiator']
 					);				
 				}
 			}
@@ -554,7 +556,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						$aShare['access'], 
 						$aShare['isdir'],
 						'',
-						$aShare['group_id']
+						$aShare['group_id'],
+						$aShare['initiator']
 					);
 				}
 			} else {
@@ -620,7 +623,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						Access::NoAccess, 
 						($aItem instanceof SharedDirectory),
 						'',
-						0
+						0,
+						'principals/' . $aItem->getOwnerPublicId()
 					);
 				} else {
 					$this->oBackend->updateSharedFile(
@@ -629,8 +633,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						$aItem->getRelativePath() . '/' . $aItem->getName(), 
 						$sUserPrincipalUri, 
 						Access::NoAccess, 
-						0
-
+						0,
+						'principals/' . $aItem->getOwnerPublicId()
 					);					
 				}
 			}

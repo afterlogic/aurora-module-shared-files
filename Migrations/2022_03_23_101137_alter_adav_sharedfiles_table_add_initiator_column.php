@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Capsule\Manager as Capsule;
 
-class AlterAdavSharedfilesTable extends Migration
+class AlterAdavSharedfilesTableAddInitiatorColumn extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class AlterAdavSharedfilesTable extends Migration
     public function up()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD share_path varchar(255) DEFAULT ''");
+        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD `initiator` varchar(255) AFTER principaluri");
     }
 
     /**
@@ -25,6 +25,6 @@ class AlterAdavSharedfilesTable extends Migration
     public function down()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN share_path");
+        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN `initiator`");
     }
 }
