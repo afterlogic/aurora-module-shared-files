@@ -28,14 +28,14 @@ CButtonsView.prototype.useFilesViewData = function (oFilesView)
 	this.isShareVisible = ko.computed(function () {
 		const sharedParentFolder = oFilesView.sharedParentFolder();
 		return !sharedParentFolder && !oFilesView.isCorporateStorage() ||
-				sharedParentFolder && sharedParentFolder.bSharedWithMeAccessReshare;
+				sharedParentFolder && sharedParentFolder.sharedWithMeAccessReshare();
 	});
 
 	this.shareCommand = Utils.createCommand(this, this.executeShare.bind(this, oFilesView), oFilesView.isShareAllowed);
 
 	this.selectedSharedItems = ko.computed(function () {
 		return _.filter(oFilesView.selector.listCheckedAndSelected(), function(item) {
-			return item.bSharedWithMe;
+			return item.sharedWithMe();
 		});
 	}, this);
 	this.selectedSharedCount = ko.computed(function () {

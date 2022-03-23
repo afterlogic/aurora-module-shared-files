@@ -82,9 +82,11 @@ CFilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
  *
  * @param {Object} fileItem
  */
-CFilesSharePopup.prototype.onOpen = function (fileItem)
+CFilesSharePopup.prototype.onOpen = function (fileItem, expungeFileItems)
 {
 	this.oFileItem = fileItem || null;
+	this.expungeFileItems = expungeFileItems;
+
 	this.hintText('');
 	this.selectedTeammateEmail('');
 	this.selectedTeammateData(null);
@@ -101,8 +103,8 @@ CFilesSharePopup.prototype.onOpen = function (fileItem)
 		);
 
 		this.fillUpShares();
-		this.requestFileShares(function (shares) {
-			this.updateFileShares(shares);
+		this.requestFileShares(function (sharedWithMeAccess, shares) {
+			this.updateFileShares(sharedWithMeAccess, shares);
 			this.fillUpShares();
 		}.bind(this));
 	}
@@ -135,24 +137,45 @@ CFilesSharePopup.prototype.requestFileShares = function (callback)
 		function (response, request) {
 			this.loadingFileShares(false);
 			if (response && response.Result && response.Result.Shares) {
-				callback(response.Result.Shares);
+				callback(response.Result.SharedWithMeAccess, response.Result.Shares);
+			} else {
+				callback(Enums.SharedFileAccess.NoAccess, []);
 			}
 		}.bind(this)
 	);
 };
 
-CFilesSharePopup.prototype.updateFileShares = function (shares)
+CFilesSharePopup.prototype.updateFileShares = function (newSharedWithMeAccess, newShares)
 {
 	if (!this.oFileItem) {
 		return;
 	}
+	
 
 	//Update shares list in oFile object
+
 	if (!this.oFileItem.oExtendedProps) {
 		this.oFileItem.oExtendedProps = {};
 	}
-	this.oFileItem.oExtendedProps.Shares = Types.pArray(shares);
-	this.oFileItem.sharedWithOthers(this.oFileItem.oExtendedProps.Shares.length > 0);
+
+	const oldSharedWithMeAccess = this.oFileItem.oExtendedProps.SharedWithMeAccess;
+	if (oldSharedWithMeAccess !== newSharedWithMeAccess) {
+		if (this.oFileItem.sharedWithMe() && newSharedWithMeAccess === Enums.SharedFileAccess.NoAccess) {
+			this.oFileItem.deleted(true);
+			if (_.isFunction(this.expungeFileItems)) {
+				this.expungeFileItems();
+			}
+			this.closePopup();
+			return;
+		}
+		this.oFileItem.updateExtendedProps({
+			'SharedWithMeAccess': newSharedWithMeAccess,
+			'Shares': Types.pArray(newShares)
+		});
+		if (this.oFileItem.sharedWithMe() && !this.oFileItem.sharedWithMeAccessReshare()) {
+			this.closePopup();
+		}
+	}
 };
 
 CFilesSharePopup.prototype.getCurrentShares = function ()
@@ -361,19 +384,23 @@ CFilesSharePopup.prototype.checkAndSaveShares = function ()
 	}
 
 	this.isSaving(true);
-	this.requestFileShares(function (sharesFromServer) {
+	this.requestFileShares(function (sharedWithMeAccessFromServer, sharesFromServer) {
 		this.isSaving(false);
 		const fileItem = this.oFileItem;
-		let savedShares = Types.pArray(fileItem && fileItem.oExtendedProps && fileItem.oExtendedProps.Shares);
+		let
+			extendedProps = fileItem && fileItem.oExtendedProps,
+			savedShares = Types.pArray(extendedProps && extendedProps.Shares),
+			sharedWithMeAccess = Types.pInt(extendedProps && extendedProps.SharedWithMeAccess)
+		;
 		sharesFromServer = _.sortBy(sharesFromServer, 'PublicId');
 		savedShares = _.sortBy(savedShares, 'PublicId');
-		if (_.isEqual(savedShares, sharesFromServer)) {
+		if (_.isEqual(savedShares, sharesFromServer) && sharedWithMeAccessFromServer === sharedWithMeAccess) {
 			this.saveShares();
 		} else {
 			const
 				alertText = TextUtils.i18n('%MODULENAME%/WARNING_SHARES_CHANGED_BY_OTHER_USER'),
 				alertCallback = function () {
-					this.updateFileShares(sharesFromServer);
+					this.updateFileShares(sharedWithMeAccessFromServer, sharesFromServer);
 					this.fillUpShares();
 				}.bind(this)
 			;
@@ -455,10 +482,12 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (response, request)
 {
 	this.isSaving(false);
 	if (response.Result) {
-		this.updateFileShares(request.Parameters.Shares);
-		Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
-		this.oFileItem = null;
-		this.closePopup();
+		this.requestFileShares(function (sharedWithMeAccess, shares) {
+			this.updateFileShares(sharedWithMeAccess, shares);
+			Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
+			this.oFileItem = null;
+			this.closePopup();
+		}.bind(this));
 	} else {
 		Api.showErrorByCode(response, TextUtils.i18n('%MODULENAME%/ERROR_UNKNOWN_ERROR'));
 	}
