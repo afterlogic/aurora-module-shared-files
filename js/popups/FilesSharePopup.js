@@ -79,8 +79,8 @@ _.extendOwn(CFilesSharePopup.prototype, CAbstractPopup.prototype);
 CFilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
 
 /**
- *
- * @param {Object} fileItem
+ * @param {object} fileItem
+ * @param {function} expungeFileItems
  */
 CFilesSharePopup.prototype.onOpen = function (fileItem, expungeFileItems)
 {
@@ -137,7 +137,9 @@ CFilesSharePopup.prototype.requestFileShares = function (callback)
 		function (response, request) {
 			this.loadingFileShares(false);
 			if (response && response.Result && response.Result.Shares) {
-				callback(response.Result.SharedWithMeAccess, response.Result.Shares);
+				const sharedWithMeAccess = Types.pEnum(response.Result.SharedWithMeAccess,
+						Enums.SharedFileAccess, Enums.SharedFileAccess.NoAccess);
+				callback(sharedWithMeAccess, response.Result.Shares);
 			} else {
 				callback(Enums.SharedFileAccess.NoAccess, []);
 			}
