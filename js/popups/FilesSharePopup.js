@@ -155,12 +155,10 @@ CFilesSharePopup.prototype.updateFileShares = function (newSharedWithMeAccess, n
 	
 
 	//Update shares list in oFile object
-
-	if (!this.oFileItem.oExtendedProps) {
-		this.oFileItem.oExtendedProps = {};
-	}
-
-	const oldSharedWithMeAccess = this.oFileItem.oExtendedProps.SharedWithMeAccess;
+	const
+		extendedProps = this.oFileItem.oExtendedProps,
+		oldSharedWithMeAccess = Types.pInt(extendedProps && extendedProps.SharedWithMeAccess)
+	;
 	if (oldSharedWithMeAccess !== newSharedWithMeAccess) {
 		if (this.oFileItem.sharedWithMe() && newSharedWithMeAccess === Enums.SharedFileAccess.NoAccess) {
 			this.oFileItem.deleted(true);
@@ -170,13 +168,13 @@ CFilesSharePopup.prototype.updateFileShares = function (newSharedWithMeAccess, n
 			this.closePopup();
 			return;
 		}
-		this.oFileItem.updateExtendedProps({
-			'SharedWithMeAccess': newSharedWithMeAccess,
-			'Shares': Types.pArray(newShares)
-		});
-		if (this.oFileItem.sharedWithMe() && !this.oFileItem.sharedWithMeAccessReshare()) {
-			this.closePopup();
-		}
+	}
+	this.oFileItem.updateExtendedProps({
+		'SharedWithMeAccess': newSharedWithMeAccess,
+		'Shares': Types.pArray(newShares)
+	});
+	if (this.oFileItem.sharedWithMe() && !this.oFileItem.sharedWithMeAccessReshare()) {
+		this.closePopup();
 	}
 };
 
