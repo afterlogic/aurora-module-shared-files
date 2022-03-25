@@ -266,8 +266,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$oNode->getSharePath()
 				);
 				if ($aSharedFile) {
-					list(, $sUserPublicId) = split($aSharedFile['owner']);
-					$sUserPrincipalUri = 'principals/' . $sUserPublicId;
+					$sUserPrincipalUri = $aSharedFile['owner'];
+				} else {
+					$sUserPrincipalUri = 'principals/' . $oNode->getOwner();
 				}
 				$ParentNode = $oNode->getNode();
 				$FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
