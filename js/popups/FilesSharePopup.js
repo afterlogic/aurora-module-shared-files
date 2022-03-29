@@ -235,12 +235,17 @@ CFilesSharePopup.prototype.cancelPopup = function ()
 
 CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 {
+	if (!this.oFileItem) {
+		fResponse([]);
+		return;
+	}
+
 	const
 		suggestParameters = {
 			storage: 'team',
 			addContactGroups: false,
 			addUserGroups: true,
-			exceptEmail: App.getUserPublicId()
+			exceptEmail: this.oFileItem.sOwnerName
 		},
 		autocompleteCallback = ModulesManager.run(
 			'ContactsWebclient', 'getSuggestionsAutocompleteCallback', [suggestParameters]
