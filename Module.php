@@ -153,7 +153,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 			}
 
-			if (!$aShares && $SharedWithMe) {
+			if (!$aShares && $SharedWithMe && !$oNode->isInherited()) {
 
 				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
 					Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
