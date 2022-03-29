@@ -257,6 +257,13 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			if ($oNode) {         
 				$aExtendedProps = $oNode->getProperty('ExtendedProps');
 				$bIsEncrypted = (is_array($aExtendedProps) && isset($aExtendedProps['InitializationVector']));
+
+				$aSharePublicIds = array_map(function ($share) {
+					return strtolower($share['PublicId']);
+				}, $Shares);
+				if (in_array(strtolower($oNode->getOwner()), $aSharePublicIds)) {
+					throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
+				}
 			}
 			$bIsShared = ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory);
 			if ($bIsShared) {
@@ -276,7 +283,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 
 			$aResultShares = [];
-			foreach ($Shares as $key => $item) {
+			foreach ($Shares as $item) {
 				if (isset($item['GroupId'])) {
 					$aUsers = CoreModule::Decorator()->GetGroupUsers($oUser->IdTenant, (int) $item['GroupId']);
 					foreach ($aUsers as $aUser) {
