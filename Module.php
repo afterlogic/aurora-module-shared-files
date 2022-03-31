@@ -95,6 +95,17 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Files::LeaveShare', [$this, 'onLeaveShare']);
 	}
 
+	protected function populateExtendedProps($userId, $type, $path, &$aExtendedProps)
+	{
+		$bSharedWithMe = isset($aExtendedProps['SharedWithMeAccess']) ? $aExtendedProps['SharedWithMeAccess'] === Permission::Reshare : false;
+		$aExtendedProps['Shares'] = $this->GetShares(
+			$userId, 
+			$type, 
+			$path, 
+			$bSharedWithMe
+		);
+	}
+
 	/**
 	 * @ignore
 	 * @param array $aArgs Arguments of event.
@@ -104,15 +115,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	{
 		if (is_array($mResult)) {
 			foreach ($mResult as $oItem) {
-				$oExtendedProps = $oItem->ExtendedProps;
-				$bSharedWithMe = isset($oExtendedProps['SharedWithMeAccess']) ? $oExtendedProps['SharedWithMeAccess'] === Permission::Reshare : false;
-				$oExtendedProps['Shares'] = $this->GetShares(
-					$aArgs['UserId'], 
-					$aArgs['Type'], 
-					\rtrim($oItem->Path, '/') . '/' . $oItem->Id, 
-					$bSharedWithMe
-				);
-				$oItem->ExtendedProps = $oExtendedProps;
+				$aExtendedProps = $oItem->ExtendedProps;
+				$this->populateExtendedProps($aArgs['UserId'], $aArgs['Type'], \rtrim($oItem->Path, '/') . '/' . $oItem->Id, $aExtendedProps);
+				$oItem->ExtendedProps = $aExtendedProps;
 			}
 		}
 	}
@@ -382,7 +387,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						} else {
 							$sNonExistentFileName = $Id;
 						}
-						$mResult = $mResult && $this->oBackend->createSharedFile(
+						$mCreateResult = $this->oBackend->createSharedFile(
 							$sUserPrincipalUri, 
 							$Storage, 
 							$FullPath, 
@@ -394,6 +399,16 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 							$groupId,
 							$sInitiator
 						);
+						if ($mCreateResult) {
+							$aArgs = [
+								'UserPrincipalUri' => $sUserPrincipalUri,
+								'Storage' => $Storage,
+								'FullPath' => $FullPath,
+								'Share' => $aShare,
+							];
+							$this->broadcastEvent($this->GetName() . '::CreateSharedFile', $aArgs);
+						}
+						$mResult = $mResult && $mCreateResult;
 					} else {
 						$bUpdate = false;
 						foreach($aItemsToUpdate as $aItemToUpdate) {
@@ -404,7 +419,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 							}
 						}
 						if ($bUpdate) {
-							$mResult = $mResult && $this->oBackend->updateSharedFile(
+							$mUpdateResult = $this->oBackend->updateSharedFile(
 								$sUserPrincipalUri, 
 								$Storage, 
 								$FullPath, 
@@ -412,6 +427,16 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 								$aShare['Access'],
 								$groupId
 							);
+							if ($mUpdateResult) {
+								$aArgs = [
+									'UserPrincipalUri' => $sUserPrincipalUri,
+									'Storage' => $Storage,
+									'FullPath' => $FullPath,
+									'Share' => $aShare,
+								];
+								$this->broadcastEvent($this->GetName() . '::UpdateSharedFile', $aArgs);
+							}
+							$mResult = $mResult && $mUpdateResult;
 						}
 					}
 				} catch (\PDOException $oEx) {
@@ -595,16 +620,15 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	public function onPopulateExtendedProps(&$aArgs, &$mResult)
 	{
 		$oItem = $aArgs['Item'];
-		if ($oItem instanceof \Afterlogic\DAV\FS\Shared\File || $oItem instanceof \Afterlogic\DAV\FS\Shared\Directory) {
+		if ($oItem instanceof SharedFile || $oItem instanceof SharedDirectory) {
 			$mResult['SharedWithMeAccess'] = $oItem->getAccess();
 		}
 
-		$bSharedWithMe = isset($mResult['SharedWithMeAccess']) ? $mResult['SharedWithMeAccess'] === Permission::Reshare : false;
-		$mResult['Shares'] = $this->GetShares(
+		$this->populateExtendedProps(
 			$aArgs['UserId'], 
 			$aArgs['Type'], 
 			\rtrim($aArgs['Path'], '/') . '/' . $aArgs['Name'], 
-			$bSharedWithMe
+			$mResult
 		);
 	}
 
