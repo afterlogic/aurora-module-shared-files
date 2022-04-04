@@ -29,19 +29,16 @@ function CFilesSharePopup()
 {
 	CAbstractPopup.call(this);
 
-	this.oFileItem = null;
+	this.fileItem = null;
+	this.isFileEncrypted = false;
 	this.hintText = ko.observable('');
-	this.allowReshare = ko.observable(false);
 	this.accessList = ko.computed(function () {
-		var list = [
+		return [
 			{ value: Enums.SharedFileAccess.Read, label: TextUtils.i18n('%MODULENAME%/LABEL_READ_ACCESS') },
-			{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS') }
+			{ value: Enums.SharedFileAccess.Write, label: TextUtils.i18n('%MODULENAME%/LABEL_WRITE_ACCESS') },
+			{ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') },
+			{ value: Enums.SharedFileAccess.NoAccess, label: TextUtils.i18n('%MODULENAME%/LABEL_NOSHARE_ACCESS') }
 		];
-		if (this.allowReshare()) {
-			list.push({ value: Enums.SharedFileAccess.Reshare, label: TextUtils.i18n('%MODULENAME%/LABEL_RESHARE_ACCESS') });
-		}
-		list.push({ value: Enums.SharedFileAccess.NoAccess, label: TextUtils.i18n('%MODULENAME%/LABEL_NOSHARE_ACCESS') });
-		return list;
 	}, this);
 
 	this.shares = ko.observableArray([]);
@@ -82,38 +79,41 @@ CFilesSharePopup.prototype.PopupTemplate = '%ModuleName%_FilesSharePopup';
  * @param {object} fileItem
  * @param {function} expungeFileItems
  */
-CFilesSharePopup.prototype.onOpen = function (fileItem, expungeFileItems)
+CFilesSharePopup.prototype.onOpen = function (fileItem = null, expungeFileItems = null)
 {
-	this.oFileItem = fileItem || null;
+	if (fileItem === null) {
+		this.closePopup();
+		return;
+	}
+
+	this.fileItem = fileItem;
+	const extendedProps = fileItem && fileItem.oExtendedProps;
+	this.isFileEncrypted = !!(fileItem.oExtendedProps && fileItem.oExtendedProps.InitializationVector);
 	this.expungeFileItems = expungeFileItems;
 
 	this.hintText('');
 	this.selectedTeammateEmail('');
 	this.selectedTeammateData(null);
-	if (fileItem !== null) {
-		var isFileEncrypted = fileItem.oExtendedProps && fileItem.oExtendedProps.InitializationVector;
-		this.allowReshare(!isFileEncrypted);
 
-		App.broadcastEvent(
-			'%ModuleName%::OpenFilesSharePopup',
-			{
-				'DialogHintText': this.hintText,
-				'IsDir': !fileItem.IS_FILE
-			}
-		);
+	App.broadcastEvent(
+		'%ModuleName%::OpenFilesSharePopup',
+		{
+			'DialogHintText': this.hintText,
+			'IsDir': !fileItem.IS_FILE
+		}
+	);
 
+	this.fillUpShares();
+	this.requestFileShares(function (sharedWithMeAccess, shares) {
+		this.updateFileShares(sharedWithMeAccess, shares);
 		this.fillUpShares();
-		this.requestFileShares(function (sharedWithMeAccess, shares) {
-			this.updateFileShares(sharedWithMeAccess, shares);
-			this.fillUpShares();
-		}.bind(this));
-	}
+	}.bind(this));
 };
 
 CFilesSharePopup.prototype.fillUpShares = function ()
 {
 	const
-		extendedProps = this.oFileItem && this.oFileItem.oExtendedProps,
+		extendedProps = this.fileItem && this.fileItem.oExtendedProps,
 		sharesData = Types.pArray(extendedProps && extendedProps.Shares)
 	;
 	this.shares(_.map(sharesData, function (shareData) {
@@ -123,7 +123,7 @@ CFilesSharePopup.prototype.fillUpShares = function ()
 
 CFilesSharePopup.prototype.requestFileShares = function (callback)
 {
-	const fileItem = this.oFileItem;
+	const fileItem = this.fileItem;
 	const parameters = {
 		'Type': fileItem.storageType(),
 		'Path': fileItem.path(),
@@ -149,19 +149,18 @@ CFilesSharePopup.prototype.requestFileShares = function (callback)
 
 CFilesSharePopup.prototype.updateFileShares = function (newSharedWithMeAccess, newShares)
 {
-	if (!this.oFileItem) {
+	if (!this.fileItem) {
 		return;
 	}
-	
 
 	//Update shares list in oFile object
 	const
-		extendedProps = this.oFileItem.oExtendedProps,
+		extendedProps = this.fileItem.oExtendedProps,
 		oldSharedWithMeAccess = Types.pInt(extendedProps && extendedProps.SharedWithMeAccess)
 	;
 	if (oldSharedWithMeAccess !== newSharedWithMeAccess) {
-		if (this.oFileItem.sharedWithMe() && newSharedWithMeAccess === Enums.SharedFileAccess.NoAccess) {
-			this.oFileItem.deleted(true);
+		if (this.fileItem.sharedWithMe() && newSharedWithMeAccess === Enums.SharedFileAccess.NoAccess) {
+			this.fileItem.deleted(true);
 			if (_.isFunction(this.expungeFileItems)) {
 				this.expungeFileItems();
 			}
@@ -169,11 +168,11 @@ CFilesSharePopup.prototype.updateFileShares = function (newSharedWithMeAccess, n
 			return;
 		}
 	}
-	this.oFileItem.updateExtendedProps({
+	this.fileItem.updateExtendedProps({
 		'SharedWithMeAccess': newSharedWithMeAccess,
 		'Shares': Types.pArray(newShares)
 	});
-	if (this.oFileItem.sharedWithMe() && !this.oFileItem.sharedWithMeAccessReshare()) {
+	if (this.fileItem.sharedWithMe() && !this.fileItem.sharedWithMeAccessReshare()) {
 		this.closePopup();
 	}
 };
@@ -191,10 +190,14 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 				GroupId: share.groupId
 			};
 		} else {
-			return {
+			const state = {
 				PublicId: share.publicId,
 				Access: access
 			};
+			if (this.isFileEncrypted && share.isNew) {
+				state.New = true;
+			}
+			return state;
 		}
 	}, this);
 };
@@ -202,7 +205,7 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 CFilesSharePopup.prototype.hasChanges = function ()
 {
 	var
-		fileItem = this.oFileItem,
+		fileItem = this.fileItem,
 		savedShares = Types.pArray(fileItem && fileItem.oExtendedProps && fileItem.oExtendedProps.Shares),
 		currentShares = this.getCurrentShares()
 	;
@@ -235,7 +238,8 @@ CFilesSharePopup.prototype.cancelPopup = function ()
 
 CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 {
-	if (!this.oFileItem) {
+	const fileItem = this.fileItem;
+	if (!this.fileItem) {
 		fResponse([]);
 		return;
 	}
@@ -244,20 +248,22 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 		suggestParameters = {
 			storage: 'team',
 			addContactGroups: false,
-			addUserGroups: true,
-			exceptEmail: this.oFileItem.sOwnerName
+			addUserGroups: !this.isFileEncrypted,
+			exceptEmail: this.fileItem.sOwnerName
 		},
 		autocompleteCallback = ModulesManager.run(
 			'ContactsWebclient', 'getSuggestionsAutocompleteCallback', [suggestParameters]
 		),
 		markRecipientsWithKeyCallback = function (recipientList) {
-			var filteredList = _.filter(recipientList, function (suggest) {
-				var suggestEmailLower = suggest.email.toLowerCase();
-				return suggestEmailLower !== this.oFileItem.sOwnerName.toLowerCase()
-						&& !_.find(this.shares(), function (share) {
-							return share.publicId.toLowerCase() === suggestEmailLower;
-						});
-			}, this);
+			const ownerLowerCase = fileItem.sOwnerName.toLowerCase();
+			let filteredList = this.isFileEncrypted
+				? recipientList.filter(suggestion => suggestion.hasKey)
+				: recipientList;
+			filteredList = filteredList.filter(suggestion => {
+				const emailLowerCase = suggestion.email.toLowerCase();
+				return ownerLowerCase !== emailLowerCase &&
+						!this.shares().find(share => share.publicId.toLowerCase() === emailLowerCase);
+			});
 			this.lastRecievedSuggestList = filteredList;
 
 			if (filteredList.length > 0) {
@@ -355,7 +361,8 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 		PublicId: this.selectedTeammateData().email,
 		GroupId: this.selectedTeammateData().groupId,
 		IsAll: this.selectedTeammateData().isAllUsersGroup,
-		Access: access
+		Access: access,
+		New: true
 	}));
 
 	this.selectedTeammateData(null);
@@ -391,7 +398,7 @@ CFilesSharePopup.prototype.checkAndSaveShares = function ()
 	this.isSaving(true);
 	this.requestFileShares(function (sharedWithMeAccessFromServer, sharesFromServer) {
 		this.isSaving(false);
-		const fileItem = this.oFileItem;
+		const fileItem = this.fileItem;
 		let
 			extendedProps = fileItem && fileItem.oExtendedProps,
 			savedShares = Types.pArray(extendedProps && extendedProps.Shares),
@@ -447,11 +454,11 @@ CFilesSharePopup.prototype.confirmedSaveShares = function ()
 	var
 		shares = this.getCurrentShares(),
 		parameters = {
-			'Storage': this.oFileItem.storageType(),
-			'Path': this.oFileItem.path(),
-			'Id': this.oFileItem.id(),
+			'Storage': this.fileItem.storageType(),
+			'Path': this.fileItem.path(),
+			'Id': this.fileItem.id(),
 			'Shares': shares,
-			'IsDir': !this.oFileItem.IS_FILE
+			'IsDir': !this.fileItem.IS_FILE
 		},
 		fOnSuccessCallback = _.bind(function () {
 			Ajax.send(
@@ -470,11 +477,10 @@ CFilesSharePopup.prototype.confirmedSaveShares = function ()
 	var hasSubscriber = App.broadcastEvent(
 		'%ModuleName%::UpdateShare::before',
 		{
+			FileItem: this.fileItem,
 			Shares: shares,
 			OnSuccessCallback: fOnSuccessCallback,
-			OnErrorCallback: fOnErrorCallback,
-			oFileItem: this.oFileItem,
-			IsDir: !this.oFileItem.IS_FILE
+			OnErrorCallback: fOnErrorCallback
 		}
 	);
 
@@ -490,7 +496,7 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (response, request)
 		this.requestFileShares(function (sharedWithMeAccess, shares) {
 			this.updateFileShares(sharedWithMeAccess, shares);
 			Screens.showReport(TextUtils.i18n('%MODULENAME%/INFO_SHARING_STATUS_UPDATED'));
-			this.oFileItem = null;
+			this.fileItem = null;
 			this.closePopup();
 		}.bind(this));
 	} else {
@@ -500,7 +506,7 @@ CFilesSharePopup.prototype.onUpdateShareResponse = function (response, request)
 
 CFilesSharePopup.prototype.showHistory = function () {
 	if (this.bAllowShowHistory) {
-		Popups.showPopup(ShowHistoryPopup, [TextUtils.i18n('%MODULENAME%/HEADING_HISTORY_POPUP'), this.oFileItem]);
+		Popups.showPopup(ShowHistoryPopup, [TextUtils.i18n('%MODULENAME%/HEADING_HISTORY_POPUP'), this.fileItem]);
 	}
 };
 

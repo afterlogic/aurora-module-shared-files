@@ -357,9 +357,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 				}
 				$aUpdateShares[] = $Share['PublicId'];
 			}
-			if ($bIsEncrypted && count($aReshare) > 0) {
-				throw new ApiException(Enums\ErrorCodes::CantReshareEncryptedFile);
-			}
 
 			$aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
 			if (!empty($aDuplicatedUsers)) {

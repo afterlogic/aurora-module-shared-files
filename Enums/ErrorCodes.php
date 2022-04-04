@@ -18,7 +18,6 @@ class ErrorCodes
 	const UnknownError						= 1001;
 	const UserNotExists						= 1002;
 	const DuplicatedUsers					= 1003;
-	const CantReshareEncryptedFile			= 1004;
 	const NotPossibleToMoveSharedFileToSharedFolder = 1005;
 	const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
 	const NotPossibleToShareDirectoryInEcryptedStorage = 1007;
@@ -32,7 +31,6 @@ class ErrorCodes
 		'UnknownError'						=> self::UnknownError,
 		'UserNotExists'						=> self::UserNotExists,
 		'DuplicatedUsers'					=> self::DuplicatedUsers,
-		'CantReshareEncryptedFile'			=> self::CantReshareEncryptedFile,
 		'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
 		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder,
 		'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage

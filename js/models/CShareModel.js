@@ -16,6 +16,7 @@ function CShareModel(oData)
 	this.publicId = Types.pString(oData.PublicId);
 	this.groupId = Types.pInt(oData.GroupId);
 	this.isAllUsersGroup = Types.pBool(oData.IsAll);
+	this.isNew = Types.pBool(oData.New);
 
 	this.access = ko.observable(Types.pInt(oData.Access));
 	this.accessText = ko.computed(function () {
