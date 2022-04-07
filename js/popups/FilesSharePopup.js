@@ -269,7 +269,10 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 			if (filteredList.length > 0) {
 				response(filteredList);
 			} else {
-				response([{label: TextUtils.i18n('%MODULENAME%/INFO_NO_SUGGESTED_CONTACTS'), disabled: true}]);
+				const langConst = this.isFileEncrypted
+					? 'INFO_NO_SUGGESTED_CONTACTS_WITH_PGPKEY'
+					: 'INFO_NO_SUGGESTED_CONTACTS';
+				response([{label: TextUtils.i18n(`%MODULENAME%/${langConst}`), disabled: true}]);
 			}
 		}.bind(this)
 	;
