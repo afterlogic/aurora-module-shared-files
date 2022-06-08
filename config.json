@@ -1,10 +1,18 @@
 {
-	"Disabled": [
-		false,
-		"bool"
-	],
-    "SpaceLimitMb": [
-        100,
-        "int"
-    ]	
+  "Disabled": [
+    false,
+    "bool"
+  ],
+  "Disabled_Description": [
+    "",
+    "string"
+  ],
+  "SpaceLimitMb": [
+    100,
+    "int"
+  ],
+  "SpaceLimitMb_Description": [
+    "",
+    "string"
+  ]
 }
