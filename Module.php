@@ -89,6 +89,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
 		$this->subscribeEvent('Core::AddUsersToGroup::after', [$this, 'onAfterAddUsersToGroup']);
 		$this->subscribeEvent('Core::RemoveUsersFromGroup::after', [$this, 'onAfterRemoveUsersFromGroup']);
+		$this->subscribeEvent('Core::CreateUser::after', [$this, 'onAfterCreateUser']);
 		$this->subscribeEvent('Core::UpdateUser::after', [$this, 'onAfterUpdateUser']);
 		$this->subscribeEvent('Core::DeleteGroup::after', [$this, 'onAfterDeleteGroup']);
 		$this->subscribeEvent('Files::PopulateExtendedProps', [$this, 'onPopulateExtendedProps'], 10000);
@@ -548,7 +549,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 						$aDbShare['isdir'],
 						'',
 						$aDbShare['group_id'],
-						$aDbShares['initiator']
+						$aDbShare['initiator']
 					);				
 				}
 			}
@@ -669,6 +670,24 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			}
 
 			$mResult = true;
+		}
+	}
+
+	public function onAfterCreateUser($aArgs, &$mResult) 
+	{
+		if ($mResult) {
+			$oUser = User::find($mResult);
+			if ($oUser) {
+				$oGroup = CoreModule::getInstance()->GetAllGroup($oUser->IdTenant);
+				if ($oGroup) {
+					$newArgs = [
+						'GroupId' => $oGroup->Id,
+						'UserIds' => [$mResult]
+					];
+					$newResult = true;
+					$this->onAfterAddUsersToGroup($newArgs, $newResult);
+				}
+			}
 		}
 	}
 }
