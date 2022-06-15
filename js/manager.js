@@ -1,30 +1,18 @@
 'use strict';
 
-module.exports = function (oAppData) {
-	var
-		_ = require('underscore'),
-
+module.exports = function (appData) {
+	const
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-
-		oButtonsView = null
+		ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js')
 	;
 
-	function getButtonView()
-	{
-		if (!oButtonsView)
-		{
-			oButtonsView = require('modules/%ModuleName%/js/views/ButtonsView.js');
-		}
-
-		return oButtonsView;
-	}
-
-	if (App.isUserNormalOrTenant())
-	{
+	if (ModulesManager.isModuleAvailable('FilesWebclient') && App.isUserNormalOrTenant()) {
 		return {
 			start: function (ModulesManager) {
-				ModulesManager.run('FilesWebclient', 'registerToolbarButtons', [getButtonView()]);
+				const buttonsView = require('modules/%ModuleName%/js/views/ButtonsView.js');
+				ModulesManager.run('FilesWebclient', 'registerToolbarButtons', [buttonsView]);
 			},
+
 			getFilesSharePopup: function () {
 				return require('modules/SharedFiles/js/popups/FilesSharePopup.js');
 			}
