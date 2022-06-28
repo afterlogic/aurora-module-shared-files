@@ -196,6 +196,7 @@ CFilesSharePopup.prototype.getCurrentShares = function ()
 			};
 			if (this.isFileEncrypted && share.isNew) {
 				state.New = true;
+				state.ContactUUID = share.contactUUID;
 			}
 			return state;
 		}
@@ -364,6 +365,7 @@ CFilesSharePopup.prototype.addNewShare = function (access)
 		PublicId: this.selectedTeammateData().email,
 		GroupId: this.selectedTeammateData().groupId,
 		IsAll: this.selectedTeammateData().isAllUsersGroup,
+		ContactUUID: this.selectedTeammateData().uuid,
 		Access: access,
 		New: true
 	}));
