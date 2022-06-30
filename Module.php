@@ -647,7 +647,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$this->oBackend->createSharedFile(
 						'principals/' . $aItem->getOwnerPublicId(), 
 						$aItem->getStorage(), 
-						$aItem->getNode()->getRelativePath() . '/' . $aItem->getName(), 
+						$aItem->getNode()->getRelativePath() . '/' . $aItem->getNode()->getName(), 
 						$aItem->getName(), 
 						$sUserPrincipalUri, 
 						Access::NoAccess, 
@@ -660,7 +660,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					$this->oBackend->updateSharedFile(
 						'principals/' . $aItem->getOwnerPublicId(), 
 						$aItem->getStorage(), 
-						$aItem->getNode()->getRelativePath() . '/' . $aItem->getName(), 
+						$aItem->getNode()->getRelativePath() . '/' . $aItem->getNode()->getName(), 
 						$sUserPrincipalUri, 
 						Access::NoAccess, 
 						0,
