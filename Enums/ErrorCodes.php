@@ -33,6 +33,6 @@ class ErrorCodes
 		'DuplicatedUsers'					=> self::DuplicatedUsers,
 		'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
 		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder,
-		'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage
+		'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage,
 	];
 }
