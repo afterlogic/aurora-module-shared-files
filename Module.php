@@ -566,35 +566,37 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			$userPublicId = Api::getUserPublicIdById($userId);
 			$sUserPrincipalUri = 'principals/' . $userPublicId;
 
-			if (count($groupIds) > 0) {
-				
-				$aDbCreateShares = [];
-				foreach ($groupIds as $groupId) {
-					$aDbCreateShares = array_merge(
-						$aDbCreateShares,
-						$this->oBackend->getSharesByPrincipalUriAndGroupId($sUserPrincipalUri, $groupId)
-					);
-				}
+			if ($groupIds !== null) {
+				if (count($groupIds) > 0) {
+					
+					$aDbCreateShares = [];
+					foreach ($groupIds as $groupId) {
+						$aDbCreateShares = array_merge(
+							$aDbCreateShares,
+							$this->oBackend->getSharesByPrincipalUriAndGroupId($sUserPrincipalUri, $groupId)
+						);
+					}
 
-				foreach ($aDbCreateShares as $aShare) {
-				
-					$mResult && $this->oBackend->createSharedFile(
-						$aShare['owner'], 
-						$aShare['storage'], 
-						$aShare['path'], 
-						basename($aShare['path']), 
-						$sUserPrincipalUri, 
-						$aShare['access'], 
-						$aShare['isdir'],
-						'',
-						$aShare['group_id'],
-						$aShare['initiator']
-					);
+					foreach ($aDbCreateShares as $aShare) {
+					
+						$mResult && $this->oBackend->createSharedFile(
+							$aShare['owner'], 
+							$aShare['storage'], 
+							$aShare['path'], 
+							basename($aShare['path']), 
+							$sUserPrincipalUri, 
+							$aShare['access'], 
+							$aShare['isdir'],
+							'',
+							$aShare['group_id'],
+							$aShare['initiator']
+						);
+					}
+				} else {
+					$groupIds[] = 0;
 				}
-			} else {
-				$groupIds[] = 0;
+				$this->oBackend->deleteShareNotInGroups($sUserPrincipalUri, $groupIds);
 			}
-			$this->oBackend->deleteShareNotInGroups($sUserPrincipalUri, $groupIds);
 		}
 	}
 
