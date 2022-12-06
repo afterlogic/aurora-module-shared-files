@@ -150,7 +150,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$sUserPublicId = Api::getUserPublicIdById($UserId);
 		$oUser = Api::getUserById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
-		$oNode = Server::getNodeForPath($sFullPath);
+		$oNode = Server::getNodeForPath($sFullPath, $sUserPublicId);
 		if ($oNode) {
 			if ($oNode->getAccess() === Enums\Access::Reshare) {
 				Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
