@@ -8,6 +8,7 @@
 namespace Aurora\Modules\SharedFiles;
 
 use Afterlogic\DAV\Constants;
+use Afterlogic\DAV\FS\File;
 use Afterlogic\DAV\FS\Permission;
 use Afterlogic\DAV\Server;
 use Aurora\Api;
@@ -22,6 +23,7 @@ use Afterlogic\DAV\FS\Shared\Directory as SharedDirectory;
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\SharedFiles\Enums\Access;
 use Aurora\System\Router;
+use Sabre\DAV\FS\Directory as Directory;
 
 use function Sabre\Uri\split;
 
@@ -94,6 +96,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$this->subscribeEvent('Core::DeleteGroup::after', [$this, 'onAfterDeleteGroup']);
 		$this->subscribeEvent('Files::PopulateExtendedProps', [$this, 'onPopulateExtendedProps'], 10000);
 		$this->subscribeEvent('Files::LeaveShare', [$this, 'onLeaveShare']);
+
+		$this->denyMethodsCallByWebApi([
+			'getNonExistentFileName'
+		]);
 	}
 
 	protected function populateExtendedProps($userId, $type, $path, &$aExtendedProps)
@@ -151,7 +157,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$oUser = Api::getUserById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
 		$oNode = Server::getNodeForPath($sFullPath, $sUserPublicId);
-		if ($oNode) {
+		if ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory) {
 			if ($oNode->getAccess() === Enums\Access::Reshare) {
 				Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
 				$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $oNode->getOwnerPublicId(), $oNode->getStorage(), '/' . \ltrim($Path, '/'));
@@ -211,7 +217,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 	 *
 	 * @return string
 	 */
-	protected function getNonExistentFileName($principalUri, $sFileName, $sPath = '', $bWithoutGroup = false)
+	public function getNonExistentFileName($principalUri, $sFileName, $sPath = '', $bWithoutGroup = false)
 	{
 		$iIndex = 1;
 		$sFileNamePathInfo = pathinfo($sFileName);
@@ -260,7 +266,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 			Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
 			$oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
 			$bIsEncrypted = false;
-			if ($oNode) {         
+			if ($oNode instanceof File || $oNode instanceof Directory) {         
 				$aExtendedProps = $oNode->getProperty('ExtendedProps');
 				$bIsEncrypted = (is_array($aExtendedProps) && isset($aExtendedProps['InitializationVector']));
 
@@ -271,8 +277,9 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 					throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
 				}
 			}
-			$bIsShared = ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory);
-			if ($bIsShared) {
+			$bIsShared = false;
+			if (($oNode instanceof SharedFile || $oNode instanceof SharedDirectory)) {
+				$bIsShared = true;
 				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
 					$sUserPrincipalUri, 
 					$oNode->getName(), 
