@@ -8,6 +8,7 @@
 namespace Aurora\Modules\SharedFiles;
 
 use Afterlogic\DAV\Constants;
+use Afterlogic\DAV\FS\Directory as Directory;
 use Afterlogic\DAV\FS\File;
 use Afterlogic\DAV\FS\Permission;
 use Afterlogic\DAV\Server;
@@ -23,7 +24,6 @@ use Afterlogic\DAV\FS\Shared\Directory as SharedDirectory;
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\SharedFiles\Enums\Access;
 use Aurora\System\Router;
-use Sabre\DAV\FS\Directory as Directory;
 
 use function Sabre\Uri\split;
 
@@ -157,15 +157,19 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 		$oUser = Api::getUserById($UserId);
 		$sFullPath = 'files/' . $Storage . '/' . \ltrim($Path, '/');
 		$oNode = Server::getNodeForPath($sFullPath, $sUserPublicId);
-		if ($oNode instanceof SharedFile || $oNode instanceof SharedDirectory) {
+		
+		$aShares = [];
+		if ($oNode instanceof File || $oNode instanceof Directory) {
 			if ($oNode->getAccess() === Enums\Access::Reshare) {
 				Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
-				$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $oNode->getOwnerPublicId(), $oNode->getStorage(), '/' . \ltrim($Path, '/'));
+				if ($oNode  instanceof SharedFile || $oNode instanceof SharedDirectory) {
+					$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $oNode->getOwnerPublicId(), $oNode->getStorage(), '/' . \ltrim($Path, '/'));
+				}
 			} else {
 				$aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
 			}
 
-			if (!$aShares && $SharedWithMe && !$oNode->isInherited()) {
+			if (count($aShares) === 0 && ($oNode  instanceof SharedFile || $oNode instanceof SharedDirectory) && $SharedWithMe && !$oNode->isInherited()) {
 
 				$aSharedFile = $this->oBackend->getSharedFileByUidWithPath(
 					Constants::PRINCIPALS_PREFIX . $sUserPublicId, 
