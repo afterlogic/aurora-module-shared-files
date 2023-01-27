@@ -13,8 +13,7 @@ class AlterAdavSharedfilesTableCreateIndexes extends Migration
      */
     public function up()
     {
-        Capsule::schema()->table('adav_sharedfiles', function(Blueprint $table)
-        {
+        Capsule::schema()->table('adav_sharedfiles', function (Blueprint $table) {
             $table->index('owner');
             $table->index('principaluri');
             $table->index('initiator');
@@ -28,8 +27,7 @@ class AlterAdavSharedfilesTableCreateIndexes extends Migration
      */
     public function down()
     {
-        Capsule::schema()->table('adav_sharedfiles', function (Blueprint $table)
-        {
+        Capsule::schema()->table('adav_sharedfiles', function (Blueprint $table) {
             $table->dropIndex(['owner']);
             $table->dropIndex(['principaluri']);
             $table->dropIndex(['initiator']);

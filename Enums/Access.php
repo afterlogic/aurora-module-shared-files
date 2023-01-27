@@ -4,18 +4,18 @@ namespace Aurora\Modules\SharedFiles\Enums;
 
 class Access extends \Aurora\System\Enums\AbstractEnumeration
 {
-	const NoAccess = 0;
-	const Write	 = 1;
-	const Read   = 2;
-	const Reshare = 3;
+    public const NoAccess = 0;
+    public const Write	 = 1;
+    public const Read   = 2;
+    public const Reshare = 3;
 
-	/**
-	 * @var array
-	 */
-	protected $aConsts = array(
-		'NoAccess'	=> self::NoAccess,
-		'Write'	=> self::Write,
-		'Read'	=> self::Read,
-		'Reshare' => self::Reshare
-	);
+    /**
+     * @var array
+     */
+    protected $aConsts = array(
+        'NoAccess'	=> self::NoAccess,
+        'Write'	=> self::Write,
+        'Read'	=> self::Read,
+        'Reshare' => self::Reshare
+    );
 }

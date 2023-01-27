@@ -2,7 +2,7 @@
 
 namespace Aurora\Modules\SharedFiles\Models;
 
-use \Aurora\System\Classes\Model;
+use Aurora\System\Classes\Model;
 
 class SharedFile extends Model
 {

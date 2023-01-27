@@ -14,25 +14,25 @@ namespace Aurora\Modules\SharedFiles\Enums;
  */
 class ErrorCodes
 {
-	const NotPossibleToShareWithYourself	= 1000;
-	const UnknownError						= 1001;
-	const UserNotExists						= 1002;
-	const DuplicatedUsers					= 1003;
-	const NotPossibleToMoveSharedFileToSharedFolder = 1005;
-	const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
-	const NotPossibleToShareDirectoryInEcryptedStorage = 1007;
-	const IncorrectFilename = 1008;
+    public const NotPossibleToShareWithYourself	= 1000;
+    public const UnknownError						= 1001;
+    public const UserNotExists						= 1002;
+    public const DuplicatedUsers					= 1003;
+    public const NotPossibleToMoveSharedFileToSharedFolder = 1005;
+    public const NotPossibleToMoveEncryptedFileToSharedFolder = 1006;
+    public const NotPossibleToShareDirectoryInEcryptedStorage = 1007;
+    public const IncorrectFilename = 1008;
 
-	/**
-	 * @var array
-	 */
-	protected $aConsts = [
-		'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself,
-		'UnknownError'						=> self::UnknownError,
-		'UserNotExists'						=> self::UserNotExists,
-		'DuplicatedUsers'					=> self::DuplicatedUsers,
-		'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
-		'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder,
-		'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage,
-	];
+    /**
+     * @var array
+     */
+    protected $aConsts = [
+        'NotPossibleToShareWithYourself'	=> self::NotPossibleToShareWithYourself,
+        'UnknownError'						=> self::UnknownError,
+        'UserNotExists'						=> self::UserNotExists,
+        'DuplicatedUsers'					=> self::DuplicatedUsers,
+        'NotPossibleToMoveSharedFileToSharedFolder'	=> self::NotPossibleToMoveSharedFileToSharedFolder,
+        'NotPossibleToMoveEncryptedFileToSharedFolder' => self::NotPossibleToMoveEncryptedFileToSharedFolder,
+        'NotPossibleToShareDirectoryInEcryptedStorage' => self::NotPossibleToShareDirectoryInEcryptedStorage,
+    ];
 }

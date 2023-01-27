@@ -16,22 +16,22 @@ namespace Aurora\Modules\SharedFiles;
  */
 class Manager extends \Aurora\Modules\PersonalFiles\Manager
 {
-	/**
-	 * @param \Aurora\System\Module\AbstractModule $oModule
-	 */
-	public function __construct(\Aurora\System\Module\AbstractModule $oModule = null)
-	{
-		parent::__construct($oModule);
+    /**
+     * @param \Aurora\System\Module\AbstractModule $oModule
+     */
+    public function __construct(\Aurora\System\Module\AbstractModule $oModule = null)
+    {
+        parent::__construct($oModule);
 
-		$this->oStorage = new Storages\Sabredav\Storage($this);
-	}
+        $this->oStorage = new Storages\Sabredav\Storage($this);
+    }
 
-	/**
-	 *
-	 * @param string $sPublicId
-	 */
-	public function ClearFiles($sPublicId)
-	{
-		$this->oStorage->clearPrivateFiles($sPublicId);
-	}
+    /**
+     *
+     * @param string $sPublicId
+     */
+    public function ClearFiles($sPublicId)
+    {
+        $this->oStorage->clearPrivateFiles($sPublicId);
+    }
 }
