@@ -162,7 +162,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             if ($oNode->getAccess() === Enums\Access::Reshare) {
                 Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($Path, '/'), '{DAV:}write-acl');
                 if ($oNode  instanceof SharedFile || $oNode instanceof SharedDirectory) {
-                    $aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $oNode->getOwnerPublicId(), $oNode->getStorage(), '/' . \ltrim($Path, '/'));
+                    $aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $oNode->getNode()->getUser(), $oNode->getStorage(), '/' . \ltrim($Path, '/'));
                 }
             } else {
                 $aShares = $this->oBackend->getShares(Constants::PRINCIPALS_PREFIX . $sUserPublicId, $Storage, '/' . \ltrim($Path, '/'));
