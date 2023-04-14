@@ -70,6 +70,15 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
         return $this->oManager;
     }
 
+    /**
+     *
+     * @return Module
+     */
+    public static function Decorator()
+    {
+        return parent::Decorator();
+    }
+
     public function init()
     {
         parent::init();
@@ -211,10 +220,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
     }
 
     /**
-     * @param \Aurora\Modules\StandardAuth\Classes\Account $oAccount
-     * @param int $iType
-     * @param string $sPath
+     * @param string $principalUri
      * @param string $sFileName
+     * @param string $sPath
+     * @param bool $bWithoutGroup
      *
      * @return string
      */

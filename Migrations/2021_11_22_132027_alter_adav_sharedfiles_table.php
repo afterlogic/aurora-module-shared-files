@@ -14,7 +14,7 @@ class AlterAdavSharedfilesTable extends Migration
     public function up()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD share_path varchar(255) DEFAULT ''");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles ADD share_path varchar(255) DEFAULT ''");
     }
 
     /**
@@ -25,6 +25,6 @@ class AlterAdavSharedfilesTable extends Migration
     public function down()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN share_path");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN share_path");
     }
 }

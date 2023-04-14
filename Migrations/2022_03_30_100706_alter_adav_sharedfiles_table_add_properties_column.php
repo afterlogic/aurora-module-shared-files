@@ -14,7 +14,7 @@ class AlterAdavSharedfilesTableAddPropertiesColumn extends Migration
     public function up()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD `Properties` json");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles ADD `Properties` json");
     }
 
     /**
@@ -25,6 +25,6 @@ class AlterAdavSharedfilesTableAddPropertiesColumn extends Migration
     public function down()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN `Properties`");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN `Properties`");
     }
 }

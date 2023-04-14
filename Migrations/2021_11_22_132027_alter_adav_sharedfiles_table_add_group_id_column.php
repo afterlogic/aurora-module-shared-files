@@ -14,7 +14,7 @@ class AlterAdavSharedfilesTableAddGroupIdColumn extends Migration
     public function up()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD group_id int(10) unsigned DEFAULT 0");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles ADD group_id int(10) unsigned DEFAULT 0");
     }
 
     /**
@@ -25,6 +25,6 @@ class AlterAdavSharedfilesTableAddGroupIdColumn extends Migration
     public function down()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN group_id");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN group_id");
     }
 }

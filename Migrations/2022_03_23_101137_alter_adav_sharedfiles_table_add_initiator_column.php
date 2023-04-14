@@ -14,7 +14,7 @@ class AlterAdavSharedfilesTableAddInitiatorColumn extends Migration
     public function up()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles ADD `initiator` varchar(255) AFTER principaluri");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles ADD `initiator` varchar(255) AFTER principaluri");
     }
 
     /**
@@ -25,6 +25,6 @@ class AlterAdavSharedfilesTableAddInitiatorColumn extends Migration
     public function down()
     {
         $prefix = Capsule::connection()->getTablePrefix();
-        Capsule::statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN `initiator`");
+        Capsule::connection()->statement("ALTER TABLE {$prefix}adav_sharedfiles DROP COLUMN `initiator`");
     }
 }
