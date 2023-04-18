@@ -79,6 +79,15 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
         return parent::Decorator();
     }
 
+    /**
+     *
+     * @return Settings
+     */
+    protected function GetModuleSettings()
+    {
+        return $this->oModuleSettings;
+    }
+
     public function init()
     {
         parent::init();
