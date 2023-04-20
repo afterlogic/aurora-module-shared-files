@@ -73,7 +73,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
     }
 
     /**
-     *
+     * @return Module
+     */
+    public static function getInstance()
+    {
+        return parent::getInstance();
+    }
+
+    /**
      * @return Module
      */
     public static function Decorator()
@@ -82,7 +89,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
     }
 
     /**
-     *
      * @return Settings
      */
     public function getModuleSettings()
