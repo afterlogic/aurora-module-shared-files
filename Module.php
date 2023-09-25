@@ -248,11 +248,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
     {
         $iIndex = 1;
         $sFileNamePathInfo = pathinfo($sFileName);
-        $sExt = isset($sFileNamePathInfo['extension']) ? '.'.$sFileNamePathInfo['extension'] : '';
+        $sExt = isset($sFileNamePathInfo['extension']) ? '.' . $sFileNamePathInfo['extension'] : '';
         $sNameWOExt = isset($sFileNamePathInfo['filename']) ? $sFileNamePathInfo['filename'] : $sFileName;
 
         while ($this->oBackend->getSharedFileByUidWithPath($principalUri, $sFileName, $sPath, $bWithoutGroup)) {
-            $sFileName = $sNameWOExt.' ('.$iIndex.')'.$sExt;
+            $sFileName = $sNameWOExt . ' (' . $iIndex . ')' . $sExt;
             $iIndex++;
         }
         list(, $sUserPublicId) = \Sabre\Uri\split($principalUri);
