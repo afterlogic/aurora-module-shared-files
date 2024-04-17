@@ -592,7 +592,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
     public function onAfterUpdateUser($aArgs, &$mResult)
     {
         if ($mResult) {
-            $groupIds = $aArgs['GroupIds'];
+            $groupIds = $aArgs['GroupIds'] ?? null;
             $userId = $aArgs['UserId'];
 
             $userPublicId = Api::getUserPublicIdById($userId);
