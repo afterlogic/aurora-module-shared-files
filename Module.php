@@ -212,7 +212,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             foreach ($aShares as $aShare) {
                 if ($aShare['group_id'] != 0) {
                     if (!in_array($aShare['group_id'], $aGroups)) {
-                        $oGroup = CoreModule::Decorator()->GetGroup($oUser->IdTenant, (int) $aShare['group_id']);
+                        $oGroup = CoreModule::Decorator()->GetGroup((int) $aShare['group_id']);
                         if ($oGroup) {
                             $aGroups[] = $aShare['group_id'];
                             $aResult[] = [
