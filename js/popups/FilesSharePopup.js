@@ -250,7 +250,8 @@ CFilesSharePopup.prototype.autocompleteCallback = function (request, response)
 			storage: 'team',
 			addContactGroups: false,
 			addUserGroups: !this.isFileEncrypted,
-			exceptEmail: this.fileItem.sOwnerName
+			exceptEmail: this.fileItem.sOwnerName,
+			withoutEmptyEmails: false,
 		},
 		autocompleteCallback = ModulesManager.run(
 			'ContactsWebclient', 'getSuggestionsAutocompleteCallback', [suggestParameters]
