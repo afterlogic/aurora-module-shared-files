@@ -324,6 +324,11 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             $aResultShares = [];
             foreach ($Shares as $item) {
                 if (isset($item['GroupId'])) {
+                    $aResultShares[] = [
+                        'PublicId' => '',
+                        'Access' => (int) $item['Access'],
+                        'GroupId' => (int) $item['GroupId'],
+                    ];
                     $aUsers = CoreModule::Decorator()->GetGroupUsers($oUser->IdTenant, (int) $item['GroupId']);
                     foreach ($aUsers as $aUser) {
                         $aResultShares[] = [
@@ -345,21 +350,17 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             );
 
             $aOldSharePrincipals = array_map(function ($aShareItem) {
-                if (isset($aShareItem['principaluri'])) {
-                    return \json_encode([
-                        $aShareItem['principaluri'],
-                        $aShareItem['group_id']
-                    ]);
-                }
+                return \json_encode([
+                    $aShareItem['principaluri'],
+                    $aShareItem['group_id']
+                ]);
             }, $aDbShares);
 
             $aNewSharePrincipals = array_map(function ($aShareItem) {
-                if (isset($aShareItem['PublicId'])) {
-                    return \json_encode([
-                        Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'],
-                        $aShareItem['GroupId']
-                    ]);
-                }
+                return \json_encode([
+                    $aShareItem['PublicId'] ? Constants::PRINCIPALS_PREFIX . $aShareItem['PublicId'] : '',
+                    $aShareItem['GroupId']
+                ]);
             }, $aResultShares);
 
             $aItemsToDelete = array_diff($aOldSharePrincipals, $aNewSharePrincipals);
@@ -380,7 +381,8 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                 if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && $Share['GroupId'] == 0) {
                     throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
                 }
-                if (!CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
+                // PublicId may be empty when sharing storage with a group
+                if (!empty($Share['PublicId']) && !CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
                     throw new ApiException(Enums\ErrorCodes::UserNotExists);
                 }
                 if ($Share['Access'] === Enums\Access::Read) {
@@ -400,7 +402,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
             $aGuestPublicIds = [];
             foreach ($aResultShares as $aShare) {
-                $sPrincipalUri = Constants::PRINCIPALS_PREFIX . $aShare['PublicId'];
+                $sPrincipalUri = $aShare['PublicId'] ? Constants::PRINCIPALS_PREFIX . $aShare['PublicId'] : '';
 
                 $groupId = (int) $aShare['GroupId'];
 
