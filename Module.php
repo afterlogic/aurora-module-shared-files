@@ -279,7 +279,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
         $aGuests = [];
         $aOwners = [];
         $aReshare = [];
-        $aUpdateShares = [];
 
         Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
         Api::CheckAccess($UserId);
@@ -288,14 +287,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
         if ($oUser instanceof User) {
             $sUserPublicId = Api::getUserPublicIdById($UserId);
             $sInitiator = $sUserPrincipalUri = Constants::PRINCIPALS_PREFIX . $sUserPublicId;
-            $FullPath =  $Path . '/' . $Id;
-            Server::checkPrivileges('files/' . $Storage . '/' . \ltrim($FullPath, '/'), '{DAV:}write-acl');
-            $oNode = Server::getNodeForPath('files/' . $Storage . '/' . \ltrim($FullPath, '/'));
-            $bIsEncrypted = false;
+            $FullPath =  '/' . \ltrim($Path . '/' . $Id, '/');
+            Server::checkPrivileges('files/' . $Storage . $FullPath, '{DAV:}write-acl');
+            $oNode = Server::getNodeForPath('files/' . $Storage . $FullPath);
             if ($oNode instanceof File || $oNode instanceof Directory) {
-                $aExtendedProps = $oNode->getProperty('ExtendedProps');
-                $bIsEncrypted = (is_array($aExtendedProps) && isset($aExtendedProps['InitializationVector']));
-
                 $aSharePublicIds = array_map(function ($share) {
                     return strtolower($share['PublicId']);
                 }, $Shares);
@@ -311,14 +306,14 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                     $oNode->getName(),
                     $oNode->getSharePath()
                 );
-                if ($aSharedFile) {
-                    $sUserPrincipalUri = $aSharedFile['owner'];
-                } else {
-                    $sUserPrincipalUri = 'principals/' . $oNode->getOwner();
-                }
+                $sUserPrincipalUri = $aSharedFile ? $aSharedFile['owner'] : 'principals/' . $oNode->getOwner();
                 $ParentNode = $oNode->getNode();
-                $FullPath = $ParentNode->getRelativePath() . '/' . $ParentNode->getName();
+                $FullPath = '/' . \ltrim($ParentNode->getRelativePath() . '/' . $ParentNode->getName(), '/');
                 $Storage = $oNode->getStorage();
+            }
+
+            if ($FullPath === '/') { // can't share the root path of the storage
+                return false;
             }
 
             $aResultShares = [];
@@ -346,7 +341,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             $aDbShares = $this->oBackend->getShares(
                 $sUserPrincipalUri,
                 $Storage,
-                '/' . \ltrim($FullPath, '/')
+                $FullPath
             );
 
             $aOldSharePrincipals = array_map(function ($aShareItem) {
@@ -392,7 +387,6 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                 } elseif ($Share['Access'] === Enums\Access::Reshare) {
                     $aReshare[] = $Share['PublicId'];
                 }
-                $aUpdateShares[] = $Share['PublicId'];
             }
 
             $aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
@@ -416,11 +410,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                         }
                     }
                     if ($bCreate) {
-                        if ($groupId == 0) {
-                            $sNonExistentFileName = $this->getNonExistentFileName($sPrincipalUri, $Id, '', true);
-                        } else {
-                            $sNonExistentFileName = $Id;
-                        }
+                        $sNonExistentFileName = $groupId == 0 ? $this->getNonExistentFileName($sPrincipalUri, $Id, '', true) : $Id;
                         $mCreateResult = $this->oBackend->createSharedFile(
                             $sUserPrincipalUri,
                             $Storage,
@@ -500,7 +490,7 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                 }
             }
 
-            $sResourceId = $Storage . '/' . \ltrim(\ltrim($FullPath, '/'));
+            $sResourceId = $Storage . $FullPath;
             $aArgs = [
                 'UserId' => $UserId,
                 'ResourceType' => 'file',
