@@ -1,4 +1,4 @@
-<div class="popup" style="display: none;">
+<div class="popup" style="display: none;" data-test-id="files-share-dialog">
 	<div class="mask" data-bind="click: cancelPopup"></div>
 	<div class="popup_panel popup_panel_shares">
 		<span class="close" data-bind="click: cancelPopup"></span>
@@ -13,10 +13,11 @@
 				<!-- /ko -->
 				<div class="row row_new_share" data-bind="css: { 'filled': !!selectedTeammateEmail() }">
 					<input class="input" spellcheck="false" type="text"
+						data-test-id="files-share-recipient"
 						data-bind="valueUpdate: ['blur', 'afterkeydown', 'input'], initDom: selectedTeammateDom, value: selectedTeammateEmail,
 						autocompleteSimple: {callback: autocompleteCallback.bind($data), dataAccessor: selectedTeammateData}" />
 					<span class="placeholder" data-bind="i18n: {'key': '%MODULENAME%/LABEL_EMAIL_ADDRESS_OR_NAME'}"></span>
-					<div class="new_share_access_select" data-bind="click: selectAccess, initDom: selectAccessDom">
+					<div class="new_share_access_select" data-test-id="files-share-access" data-bind="click: selectAccess, initDom: selectAccessDom">
 						<span class="dropdown dropdown_right">
 							<span class="dropdown_helper">
 								<span class="dropdown_arrow"><span></span></span>
@@ -36,7 +37,7 @@
 						<!-- /ko -->
 						<!-- ko if: shares().length > 0 -->
 						<div class="shares_list shares_list_bordered" data-bind="foreach: shares">
-							<div class="item item_share">
+							<div class="item item_share" data-test-id="files-share-entry">
 								<span class="title" data-bind="text: publicId, css: { 'title_group': groupId }"></span>
 								<span class="group" data-bind="visible: groupId,
 									  css: {'all_users_group': isAllUsersGroup}"
@@ -70,9 +71,9 @@
 			<div class="buttons">
 				<span class="button contour_button" data-bind="i18n: {'key': '%MODULENAME%/ACTION_SHOW_HISTORY'},
 						click: showHistory, visible: bAllowShowHistory"></span>
-				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
+				<span class="button" data-test-id="files-share-save" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'},
 						click: checkAndSaveShares, css: {'disabled': isSaving()}"></span>
-				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
+				<span class="button secondary_button" data-test-id="files-share-cancel" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'},
 						click: cancelPopup, css: {'disabled': isSaving()}"
 				></span>
 			</div>
