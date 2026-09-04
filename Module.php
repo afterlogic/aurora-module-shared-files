@@ -260,14 +260,17 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
 
         if ($oUser) {
             $sPrevState = Api::skipCheckUserRole(true);
-            $sFileName = FilesModule::Decorator()->GetNonExistentFileName(
-                $oUser->Id,
-                FileStorageType::Personal,
-                $sPath,
-                $sFileName,
-                $bWithoutGroup
-            );
-            Api::skipCheckUserRole($sPrevState);
+            try {
+                $sFileName = FilesModule::Decorator()->GetNonExistentFileName(
+                    $oUser->Id,
+                    FileStorageType::Personal,
+                    $sPath,
+                    $sFileName,
+                    $bWithoutGroup
+                );
+            } finally {
+                Api::skipCheckUserRole($sPrevState);
+            }
         }
 
         return $sFileName;
