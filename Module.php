@@ -365,132 +365,140 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
             $aItemsToCreate = array_diff($aNewSharePrincipals, $aOldSharePrincipals);
             $aItemsToUpdate = array_intersect($aOldSharePrincipals, $aNewSharePrincipals);
 
-            foreach ($aItemsToDelete as $aItem) {
-                $aItem = \json_decode($aItem);
-                $mResult = $this->oBackend->deleteSharedFileByPrincipalUri(
-                    $aItem[0],
-                    $Storage,
-                    $FullPath,
-                    $aItem[1]
-                );
-            }
-
-            foreach ($aResultShares as $Share) {
-                if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && $Share['GroupId'] == 0) {
-                    throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
+            $this->oBackend->beginTransaction();
+            try {
+                foreach ($aItemsToDelete as $aItem) {
+                    $aItem = \json_decode($aItem);
+                    $mResult = $this->oBackend->deleteSharedFileByPrincipalUri(
+                        $aItem[0],
+                        $Storage,
+                        $FullPath,
+                        $aItem[1]
+                    );
                 }
-                // PublicId may be empty when sharing storage with a group
-                if (!empty($Share['PublicId']) && !CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
-                    throw new ApiException(Enums\ErrorCodes::UserNotExists);
-                }
-                if ($Share['Access'] === Enums\Access::Read) {
-                    $aGuests[] = $Share['PublicId'];
-                } elseif ($Share['Access'] === Enums\Access::Write) {
-                    $aOwners[] = $Share['PublicId'];
-                } elseif ($Share['Access'] === Enums\Access::Reshare) {
-                    $aReshare[] = $Share['PublicId'];
-                }
-            }
 
-            $aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
-            if (!empty($aDuplicatedUsers)) {
-                //				throw new ApiException(Enums\ErrorCodes::DuplicatedUsers);
-            }
-
-            $aGuestPublicIds = [];
-            foreach ($aResultShares as $aShare) {
-                $sPrincipalUri = $aShare['PublicId'] ? Constants::PRINCIPALS_PREFIX . $aShare['PublicId'] : '';
-
-                $groupId = (int) $aShare['GroupId'];
-
-                try {
-                    $bCreate = false;
-                    foreach ($aItemsToCreate as $aItemToCreate) {
-                        $aItemToCreate = \json_decode($aItemToCreate);
-                        if ($sPrincipalUri === $aItemToCreate[0] && $groupId == $aItemToCreate[1]) {
-                            $bCreate = true;
-                            break;
-                        }
+                foreach ($aResultShares as $Share) {
+                    if (!$bIsShared && $oUser->PublicId === $Share['PublicId'] && $Share['GroupId'] == 0) {
+                        throw new ApiException(Enums\ErrorCodes::NotPossibleToShareWithYourself);
                     }
-                    if ($bCreate) {
-                        $sNonExistentFileName = $groupId == 0 ? $this->getNonExistentFileName($sPrincipalUri, $Id, '', true) : $Id;
-                        $mCreateResult = $this->oBackend->createSharedFile(
-                            $sUserPrincipalUri,
-                            $Storage,
-                            $FullPath,
-                            $sNonExistentFileName,
-                            $sPrincipalUri,
-                            $aShare['Access'],
-                            $IsDir,
-                            '',
-                            $groupId,
-                            $sInitiator
-                        );
-                        if ($mCreateResult) {
-                            $aArgs = [
-                                'UserPrincipalUri' => $sUserPrincipalUri,
-                                'Storage' => $Storage,
-                                'FullPath' => $FullPath,
-                                'Share' => $aShare,
-                            ];
-                            $this->broadcastEvent($this->GetName() . '::CreateSharedFile', $aArgs);
-                        }
-                        $mResult = $mResult && $mCreateResult;
-                    } else {
-                        $bUpdate = false;
-                        foreach ($aItemsToUpdate as $aItemToUpdate) {
-                            $aItemToUpdate = \json_decode($aItemToUpdate);
-                            if ($sPrincipalUri === $aItemToUpdate[0] && $groupId == $aItemToUpdate[1]) {
-                                $bUpdate = true;
+                    // PublicId may be empty when sharing storage with a group
+                    if (!empty($Share['PublicId']) && !CoreModule::Decorator()->GetUserByPublicId($Share['PublicId'])) {
+                        throw new ApiException(Enums\ErrorCodes::UserNotExists);
+                    }
+                    if ($Share['Access'] === Enums\Access::Read) {
+                        $aGuests[] = $Share['PublicId'];
+                    } elseif ($Share['Access'] === Enums\Access::Write) {
+                        $aOwners[] = $Share['PublicId'];
+                    } elseif ($Share['Access'] === Enums\Access::Reshare) {
+                        $aReshare[] = $Share['PublicId'];
+                    }
+                }
+
+                $aDuplicatedUsers = array_intersect($aOwners, $aGuests, $aReshare);
+                if (!empty($aDuplicatedUsers)) {
+                    //				throw new ApiException(Enums\ErrorCodes::DuplicatedUsers);
+                }
+
+                $aGuestPublicIds = [];
+                foreach ($aResultShares as $aShare) {
+                    $sPrincipalUri = $aShare['PublicId'] ? Constants::PRINCIPALS_PREFIX . $aShare['PublicId'] : '';
+
+                    $groupId = (int) $aShare['GroupId'];
+
+                    try {
+                        $bCreate = false;
+                        foreach ($aItemsToCreate as $aItemToCreate) {
+                            $aItemToCreate = \json_decode($aItemToCreate);
+                            if ($sPrincipalUri === $aItemToCreate[0] && $groupId == $aItemToCreate[1]) {
+                                $bCreate = true;
                                 break;
                             }
                         }
-                        if ($bUpdate) {
-                            $mUpdateResult = $this->oBackend->updateSharedFile(
+                        if ($bCreate) {
+                            $sNonExistentFileName = $groupId == 0 ? $this->getNonExistentFileName($sPrincipalUri, $Id, '', true) : $Id;
+                            $mCreateResult = $this->oBackend->createSharedFile(
                                 $sUserPrincipalUri,
                                 $Storage,
                                 $FullPath,
+                                $sNonExistentFileName,
                                 $sPrincipalUri,
                                 $aShare['Access'],
-                                $groupId
+                                $IsDir,
+                                '',
+                                $groupId,
+                                $sInitiator
                             );
-                            if ($mUpdateResult) {
+                            if ($mCreateResult) {
                                 $aArgs = [
                                     'UserPrincipalUri' => $sUserPrincipalUri,
                                     'Storage' => $Storage,
                                     'FullPath' => $FullPath,
                                     'Share' => $aShare,
                                 ];
-                                $this->broadcastEvent($this->GetName() . '::UpdateSharedFile', $aArgs);
+                                $this->broadcastEvent($this->GetName() . '::CreateSharedFile', $aArgs);
                             }
-                            $mResult = $mResult && $mUpdateResult;
+                            $mResult = $mResult && $mCreateResult;
+                        } else {
+                            $bUpdate = false;
+                            foreach ($aItemsToUpdate as $aItemToUpdate) {
+                                $aItemToUpdate = \json_decode($aItemToUpdate);
+                                if ($sPrincipalUri === $aItemToUpdate[0] && $groupId == $aItemToUpdate[1]) {
+                                    $bUpdate = true;
+                                    break;
+                                }
+                            }
+                            if ($bUpdate) {
+                                $mUpdateResult = $this->oBackend->updateSharedFile(
+                                    $sUserPrincipalUri,
+                                    $Storage,
+                                    $FullPath,
+                                    $sPrincipalUri,
+                                    $aShare['Access'],
+                                    $groupId
+                                );
+                                if ($mUpdateResult) {
+                                    $aArgs = [
+                                        'UserPrincipalUri' => $sUserPrincipalUri,
+                                        'Storage' => $Storage,
+                                        'FullPath' => $FullPath,
+                                        'Share' => $aShare,
+                                    ];
+                                    $this->broadcastEvent($this->GetName() . '::UpdateSharedFile', $aArgs);
+                                }
+                                $mResult = $mResult && $mUpdateResult;
+                            }
+                        }
+                    } catch (\PDOException $oEx) {
+                        if (isset($oEx->errorInfo[1]) && $oEx->errorInfo[1] === 1366) {
+                            throw new ApiException(ErrorCodes::IncorrectFilename, $oEx);
+                        } else {
+                            throw $oEx;
                         }
                     }
-                } catch (\PDOException $oEx) {
-                    if (isset($oEx->errorInfo[1]) && $oEx->errorInfo[1] === 1366) {
-                        throw new ApiException(ErrorCodes::IncorrectFilename, $oEx);
-                    } else {
-                        throw $oEx;
+
+                    if ($mResult) {
+                        switch ((int) $aShare['Access']) {
+                            case Enums\Access::Read:
+                                $sAccess = '(r)';
+                                break;
+                            case Enums\Access::Write:
+                                $sAccess = '(r/w)';
+                                break;
+                            case Enums\Access::Reshare:
+                                $sAccess = '(r/w/s)';
+                                break;
+                            default:
+                                $sAccess = '(r/w)';
+                                break;
+                        }
+                        $aGuestPublicIds[] = $aShare['PublicId'] . ' - ' . $sAccess;
                     }
                 }
 
-                if ($mResult) {
-                    switch ((int) $aShare['Access']) {
-                        case Enums\Access::Read:
-                            $sAccess = '(r)';
-                            break;
-                        case Enums\Access::Write:
-                            $sAccess = '(r/w)';
-                            break;
-                        case Enums\Access::Reshare:
-                            $sAccess = '(r/w/s)';
-                            break;
-                        default:
-                            $sAccess = '(r/w)';
-                            break;
-                    }
-                    $aGuestPublicIds[] = $aShare['PublicId'] . ' - ' . $sAccess;
-                }
+                $this->oBackend->commit();
+            } catch (\Exception $oEx) {
+                $this->oBackend->rollBack();
+                throw $oEx;
             }
 
             $sResourceId = $Storage . $FullPath;
