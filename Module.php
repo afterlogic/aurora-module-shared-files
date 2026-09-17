@@ -621,9 +621,10 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                             );
                         }
                     }
-                } else {
-                    $groupIds[] = 0;
                 }
+                // deleteShareNotInGroups() removes every group-based share when $groupIds is
+                // empty -- correct here, since an empty list means the user belongs to no group
+                // any more, so there's no group whose shares should be kept.
                 $this->oBackend->deleteShareNotInGroups($sUserPrincipalUri, $groupIds);
             }
         }
