@@ -567,18 +567,20 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                 $aDbShares = $this->oBackend->getSharesByPrincipalUriAndGroupId($sUserPrincipalUri, $aArgs['GroupId']);
 
                 foreach ($aDbShares as $aDbShare) {
-                    $mResult = $mResult && $this->oBackend->createSharedFile(
-                        $aDbShare['owner'],
-                        $aDbShare['storage'],
-                        $aDbShare['path'],
-                        basename($aDbShare['path']),
-                        $sUserPrincipalUri,
-                        $aDbShare['access'],
-                        $aDbShare['isdir'],
-                        '',
-                        $aDbShare['group_id'],
-                        $aDbShare['initiator']
-                    );
+                    if (!$this->oBackend->sharedFileExists($sUserPrincipalUri, $aDbShare['path'], $aDbShare['group_id'])) {
+                        $mResult = $mResult && $this->oBackend->createSharedFile(
+                            $aDbShare['owner'],
+                            $aDbShare['storage'],
+                            $aDbShare['path'],
+                            basename($aDbShare['path']),
+                            $sUserPrincipalUri,
+                            $aDbShare['access'],
+                            $aDbShare['isdir'],
+                            '',
+                            $aDbShare['group_id'],
+                            $aDbShare['initiator']
+                        );
+                    }
                 }
             }
         }
@@ -604,18 +606,20 @@ class Module extends \Aurora\Modules\PersonalFiles\Module
                     }
 
                     foreach ($aDbCreateShares as $aShare) {
-                        $mResult && $this->oBackend->createSharedFile(
-                            $aShare['owner'],
-                            $aShare['storage'],
-                            $aShare['path'],
-                            basename($aShare['path']),
-                            $sUserPrincipalUri,
-                            $aShare['access'],
-                            $aShare['isdir'],
-                            '',
-                            $aShare['group_id'],
-                            $aShare['initiator']
-                        );
+                        if (!$this->oBackend->sharedFileExists($sUserPrincipalUri, $aShare['path'], $aShare['group_id'])) {
+                            $mResult && $this->oBackend->createSharedFile(
+                                $aShare['owner'],
+                                $aShare['storage'],
+                                $aShare['path'],
+                                basename($aShare['path']),
+                                $sUserPrincipalUri,
+                                $aShare['access'],
+                                $aShare['isdir'],
+                                '',
+                                $aShare['group_id'],
+                                $aShare['initiator']
+                            );
+                        }
                     }
                 } else {
                     $groupIds[] = 0;
