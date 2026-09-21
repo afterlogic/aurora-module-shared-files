@@ -19,7 +19,7 @@ class Manager extends \Aurora\Modules\PersonalFiles\Manager
     /**
      * @param \Aurora\System\Module\AbstractModule $oModule
      */
-    public function __construct(\Aurora\System\Module\AbstractModule $oModule = null)
+    public function __construct(?\Aurora\System\Module\AbstractModule $oModule = null)
     {
         parent::__construct($oModule);
 
